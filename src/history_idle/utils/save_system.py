@@ -135,6 +135,7 @@ class SaveSystem:
             'game_time': civ.game_time,
             'prestige_points': civ.prestige_points,
             'prestige_count': civ.prestige_count,
+            'available_resources': list(civ.available_resources),
 
             'resources': self._serialize_resources(civ.resources),
             'population': self._serialize_population(civ.population),
@@ -157,7 +158,9 @@ class SaveSystem:
                         'category': res.resource_type.category.value,
                         'description': res.resource_type.description,
                         'can_store': res.resource_type.can_store,
-                        'base_storage_cap': res.resource_type.base_storage_cap
+                        'base_storage_cap': res.resource_type.base_storage_cap,
+                        'tech_reveal': res.resource_type.tech_reveal,
+                        'bonus_class': res.resource_type.bonus_class
                     }
                 }
                 for res_id, res in resources.resources.items()
@@ -209,7 +212,8 @@ class SaveSystem:
             'under_construction': [
                 {
                     'building_id': construction.building_def.id,
-                    'progress': construction.progress
+                    'progress': construction.progress,
+                    'required_production': construction.required_production
                 }
                 for construction in buildings.under_construction
             ],
@@ -232,6 +236,7 @@ class SaveSystem:
         civ.game_time = data['game_time']
         civ.prestige_points = data['prestige_points']
         civ.prestige_count = data['prestige_count']
+        civ.available_resources = set(data.get('available_resources', []))
 
         # Deserialize resources
         resources_data = data['resources']['resources']
@@ -243,7 +248,9 @@ class SaveSystem:
                 category=ResourceCategory(rt_data['category']),
                 description=rt_data['description'],
                 can_store=rt_data['can_store'],
-                base_storage_cap=rt_data['base_storage_cap']
+                base_storage_cap=rt_data['base_storage_cap'],
+                tech_reveal=rt_data.get('tech_reveal'),
+                bonus_class=rt_data.get('bonus_class')
             )
 
             civ.resources.add_resource_type(resource_type, initial_amount=res_data['amount'])
@@ -282,7 +289,71 @@ class SaveSystem:
         civ.tech_tree.researched = set(tech_data['researched'])
         civ.tech_tree.research_queue = tech_data['research_queue']
 
-        # Note: Technologies, buildings definitions need to be loaded separately
-        # from game data, not from save files
+        # Store buildings and tech tree data for restoration after definitions are loaded
+        # (definitions need to be loaded from game data first)
+        civ._saved_buildings_data = data.get('buildings', {})
+        civ._saved_tech_data = tech_data
 
         return civ
+
+    def restore_from_save_data(self, civilization: Civilization) -> None:
+        """Restore buildings and current research from saved data.
+
+        Must be called AFTER load_tech_tree() and load_buildings() have been called
+        to load the definitions.
+
+        Args:
+            civilization: The civilization to restore
+        """
+        # Restore buildings from saved data
+        if hasattr(civilization, '_saved_buildings_data'):
+            buildings_data = civilization._saved_buildings_data
+
+            # Restore completed buildings
+            for building_data in buildings_data.get('buildings', []):
+                building_def = civilization.buildings.get_building_definition(building_data['definition_id'])
+                if building_def:
+                    from ..models.building import Building
+                    building = Building(
+                        definition=building_def,
+                        is_active=building_data['is_active'],
+                        assigned_workers=building_data['assigned_workers']
+                    )
+                    civilization.buildings.buildings.append(building)
+
+            # Restore buildings under construction
+            for construction_data in buildings_data.get('under_construction', []):
+                building_def = civilization.buildings.get_building_definition(construction_data['building_id'])
+                if building_def:
+                    from ..models.building import BuildingConstruction
+                    construction = BuildingConstruction(
+                        building_def=building_def,
+                        progress=construction_data['progress'],
+                        required_production=construction_data['required_production']
+                    )
+                    civilization.buildings.under_construction.append(construction)
+
+            # Restore construction queue
+            civilization.buildings.construction_queue = buildings_data.get('construction_queue', [])
+
+            # Clean up temporary data
+            del civilization._saved_buildings_data
+
+        # Restore current research from saved data
+        if hasattr(civilization, '_saved_tech_data'):
+            tech_data = civilization._saved_tech_data
+
+            if tech_data.get('current_research'):
+                from ..models.technology import ResearchProgress
+                tech_id = tech_data['current_research']['tech_id']
+                tech_def = civilization.tech_tree.get_technology(tech_id)
+
+                if tech_def:
+                    research = ResearchProgress(
+                        tech_def=tech_def,
+                        research_points=tech_data['current_research']['research_points']
+                    )
+                    civilization.tech_tree.current_research = research
+
+            # Clean up temporary data
+            del civilization._saved_tech_data

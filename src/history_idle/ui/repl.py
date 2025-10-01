@@ -2,6 +2,7 @@
 
 import time
 import sys
+import os
 import select
 import tty
 import termios
@@ -56,9 +57,54 @@ class GameREPL:
             'debug': self.cmd_debug,
         }
 
+    def clear_screen(self):
+        """Clear the terminal screen."""
+        os.system('clear' if os.name != 'nt' else 'cls')
+
+    def display_status(self):
+        """Display current civilization status (persistent UI)."""
+        print("=" * 60)
+        print("HISTORY IDLE")
+        print("=" * 60)
+        print(f"Civilization: {self.civilization.name} | Era: {self.civilization.current_era.value.title()}")
+
+        # Population summary
+        pop = self.civilization.population
+        print(f"Population: {pop.total} (Idle: {pop.idle_workers}, Working: {pop.allocated_workers})")
+
+        # Key resources summary (food, research, production rate)
+        total_food = self.civilization.get_total_food_from_crops()
+        food_rate = sum(r.net_rate for r in self.civilization.resources.resources.values()
+                       if hasattr(r.resource_type, 'bonus_class') and r.resource_type.bonus_class == 'crop')
+
+        research_res = self.civilization.resources.get("research")
+        research_str = f"{research_res.amount:.1f}" if research_res else "0.0"
+        research_rate_str = f"{research_res.net_rate:+.1f}/s" if research_res and research_res.net_rate != 0 else ""
+
+        production_res = self.civilization.resources.get("production")
+        production_rate_str = f"{production_res.production_rate:.1f}/s" if production_res and production_res.production_rate > 0 else "0.0/s"
+
+        print(f"Food: {total_food:.1f} [{food_rate:+.1f}/s] | Research: {research_str} {research_rate_str} | Production: {production_rate_str}")
+
+        # Current research
+        if self.civilization.tech_tree.current_research:
+            current = self.civilization.tech_tree.current_research
+            progress = current.progress_percentage * 100
+            print(f"Researching: {current.tech_def.name} ({progress:.0f}%)")
+
+        # Buildings under construction
+        if self.civilization.buildings.under_construction:
+            construction = self.civilization.buildings.under_construction[0]
+            progress = construction.progress_percentage * 100
+            print(f"Building: {construction.building_def.name} ({progress:.0f}%)")
+
+        print("=" * 60)
+
     def start(self):
         """Start the REPL loop."""
-        self.print_welcome()
+        self.clear_screen()
+        self.display_status()
+        print("\nType 'help' for available commands.")
         self.game_loop.start()
 
         # Set terminal to raw mode on Unix for character-by-character input
@@ -84,31 +130,35 @@ class GameREPL:
                         update = self.game_loop.tick()
                         self.last_display_time = current_time
 
-                        # Print notifications for completed techs/buildings
-                        notifications_printed = False
+                        # Check for notifications
+                        notifications = []
                         if update.get('completed_techs'):
                             for tech_name in update['completed_techs']:
-                                print(f"\r\033[K🎓 Technology completed: {tech_name}!")
-                                notifications_printed = True
+                                notifications.append(f"🎓 Technology completed: {tech_name}!")
 
                         if update.get('completed_buildings'):
                             for building_name in update['completed_buildings']:
-                                print(f"\r\033[K🏗️  Building completed: {building_name}!")
-                                notifications_printed = True
+                                notifications.append(f"🏗️  Building completed: {building_name}!")
 
                         # Check for resource state changes
                         had_notification = self._check_resource_notifications_silent()
-                        if had_notification:
-                            notifications_printed = True
 
-                        # Print debug info if enabled
-                        if self.debug_mode:
-                            self._print_debug_update(update)
-                            notifications_printed = True
+                        # If any notifications, redraw everything
+                        if notifications or had_notification or self.debug_mode:
+                            self.clear_screen()
+                            self.display_status()
+                            print()
 
-                        # Redraw prompt with current buffer if notifications were shown
-                        if notifications_printed:
-                            print(f"> {input_buffer}", end='', flush=True)
+                            # Print notifications
+                            for notification in notifications:
+                                print(notification)
+
+                            # Print debug info if enabled
+                            if self.debug_mode:
+                                self._print_debug_update(update)
+
+                            # Redraw prompt with current buffer
+                            print(f"\n> {input_buffer}", end='', flush=True)
 
                     # Check for input without blocking
                     if sys.platform != 'win32' and self.old_terminal_settings:
@@ -150,48 +200,6 @@ class GameREPL:
         finally:
             self.cleanup()
 
-    def print_welcome(self):
-        """Print welcome message."""
-        print("\n" + "="*60)
-        print("HISTORY IDLE - Interactive Mode")
-        print("="*60)
-        print(f"\nCivilization: {self.civilization.name}")
-        print(f"Location: {self.civilization.starting_location.value.replace('_', ' ').title()}")
-        print(f"Era: {self.civilization.current_era.value.title()}")
-        print(f"Government: {self.civilization.government.value.title()}")
-
-        # Display current resources
-        print("\n--- Resources ---")
-        if self.civilization.resources.resources:
-            for res_id, resource in sorted(self.civilization.resources.resources.items()):
-                rate_str = ""
-                if resource.net_rate != 0:
-                    rate_str = f" [{resource.net_rate:+.2f}/s]"
-                print(f"  {resource.resource_type.name:20} {resource.amount:8.1f}/{resource.capacity:.1f}{rate_str}")
-        else:
-            print("  No resources")
-
-        # Display current research
-        print("\n--- Research ---")
-        if self.civilization.tech_tree.current_research:
-            current = self.civilization.tech_tree.current_research
-            progress = current.progress_percentage * 100
-            print(f"  Currently Researching: {current.tech_def.name}")
-            print(f"  Progress: {progress:.1f}% ({current.research_points:.1f}/{current.tech_def.research_cost:.1f})")
-        else:
-            print("  No active research")
-            available = self.civilization.tech_tree.get_available_technologies()
-            if available:
-                print(f"  {len(available)} technologies available to research")
-                print(f"  Use 'tech' to view them and 'research <tech_id>' to start")
-
-        print("\n--- Population ---")
-        print(f"  Total: {self.civilization.population.total}")
-        print(f"  Idle Workers: {self.civilization.population.idle_workers}")
-        print(f"  Allocated Workers: {self.civilization.population.allocated_workers}")
-
-        print("\nType 'help' for available commands.")
-
     def process_command(self, command_line: str):
         """Process a command from user input."""
         parts = command_line.split()
@@ -200,6 +208,11 @@ class GameREPL:
 
         command = parts[0].lower()
         args = parts[1:]
+
+        # Clear screen and show status before command output
+        self.clear_screen()
+        self.display_status()
+        print()  # Separator line
 
         if command in self.commands:
             try:

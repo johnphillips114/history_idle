@@ -36,9 +36,18 @@ def main():
         print(f"Selected {len(civ.available_resources)} starting resources")
     else:
         print("\n=== History Idle - Loaded Game ===\n")
-        # Load tech tree and buildings for existing save
+        # Load tech tree and buildings definitions for existing save
         civ.load_tech_tree(game_data.technologies)
         civ.load_buildings(game_data.buildings)
+
+        # Restore buildings and research from save data
+        save_system.restore_from_save_data(civ)
+
+        print(f"Restored {len(civ.buildings.buildings)} buildings")
+        if civ.buildings.under_construction:
+            print(f"Restored {len(civ.buildings.under_construction)} buildings under construction")
+        if civ.tech_tree.current_research:
+            print(f"Restored current research: {civ.tech_tree.current_research.tech_def.name}")
 
     # Initialize game loop
     game_loop = GameLoop(civ)
