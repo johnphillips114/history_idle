@@ -1,0 +1,248 @@
+# History Idle - Game Design Document
+
+**Version:** 0.1
+**Last Updated:** 2025-09-30
+**Platform:** Python 3.13
+**Genre:** Incremental/Idle Civilization Game
+
+---
+
+## 1. Vision & Scope
+
+### 1.1 High-Level Concept
+[Overview of the game - what is it about, what makes it unique]
+- This game is about a civilization that a player controls throughout history.
+
+### 1.2 Design Pillars
+- Small scale technological innovations over a large scope of time
+- Start from the Paleolithic era to a post-modern future era
+- Occasional events that give the player agency to steer the fate of their society
+- 
+
+### 1.3 Inspirations
+- **Evolve Incremental** - Idle mechanics, prestige systems
+- **Caveman 2 Cosmos (Civ4 Mod)** - Historical depth, extended progression, huge timeline scope
+- **Paradox Games (EU4, CK3, Vic3)** - Strategic depth, dynamic population systems
+
+### 1.4 Target Audience
+- History buffs
+
+### 1.5 Scope
+[What's in scope for initial versions, what's stretch goals]
+
+---
+
+## 2. Core Gameplay Loop
+
+### 2.1 Moment-to-Moment Gameplay
+Players can adjust the allocation of their available population to extract resources or target different technologies. Players can also spend their resources on buildings or other land development.
+
+### 2.2 Short-Term Loop (Session)
+The same progress as in moment-to-moment gameplay. They may encounter one or two random events in a single session.
+
+### 2.3 Medium-Term Loop (Days/Weeks)
+Over many sessions, the player will be able to discover new technologies to unlock new buildings and other new technologies to research. A player's first single playthrough will take weeks to complete. 
+
+### 2.4 Long-Term Loop (Prestige/Meta)
+After completing a single playthrough, the player can prestige into a new playthrough. They will gain prestige points that can be redeemed in a Meta tech-tree which offers different gamplay bonuses for future playthroughs. 
+
+---
+
+## 3. Progression Systems
+
+### 3.1 Historical Eras
+- Paleolithic Age
+- Neolithic Age
+- Bronze Age
+- Iron Age
+- Classical Age
+- Medieval Age
+- Renaissance
+- Industrial Age
+- Modern Age
+- Future Age
+
+### 3.2 Era Transition Mechanics
+Players progress through eras by discovering technologies.
+
+### 3.3 Prestige/Reset Systems
+Prestiging starts a new game in a new start location. Players are awarded a number of prestige points to be redeemed in a Meta tech-tree for permanent in-game bonuses.
+
+### 3.4 Unlocks & Milestones
+[Major progression gates and achievements]
+
+### 3.5 Start Location 
+The player is assigned a random starting location and culture to begin the game and after a prestige. These include:
+- Western Europe
+- Northern Europe
+- West Mediterranean
+- East Mediterranean
+- European Steppes
+- Levant
+- Mesopotamia 
+- Nile
+- Maghreb
+- Persian
+- Indus 
+- Asian Steppes
+- Southeast Asia
+- Indonesia
+- Australia
+- Polynesia
+- Yellow River
+- Japan
+- Cascadia
+- Prairie Steppes 
+- Great Lakes
+- East Coast
+- Mississippi
+- Southwest
+- Mesoamerican
+- Central American
+- Carribbean
+- Andes
+- La Plata
+- Amazonian
+- Serengeti
+- Congo
+- African Great Lakes
+- Ethiopian Highlands
+
+---
+
+## 4. Resource Systems
+
+### 4.1 Core Resources
+For the prototype, we will use the Caveman2Cosmos resources, which can be found here: https://github.com/caveman2cosmos/Caveman2Cosmos/blob/b0fc0fc72072a1bf72882d733f68baedf763684c/Assets/XML/Terrain/CIV4BonusInfos.xml.
+
+### 4.4 Abstract Resources
+- Currency
+- Research Points
+- Literacy
+
+### 4.5 Resource Production & Consumption
+Resources can be extracted from the player's domain by allocating population to extracting that resource. The player may not have all resources available, and so they may have to trade with AI opponents. Resources are used for buildings, land development, and technology research. Food resources are required to grow or maintain the player's population.
+
+### 4.6 Storage & Caps
+A small amount of most resources can be stored initially. Storage can be gained by constructing various buildings. Some resources that are hard to handle (for example: elephants and horses) cannot be stored without building their respective buildings.
+
+---
+
+## 5. Population & Workforce
+
+### 5.1 Population Mechanics
+Players can grow their population by having a surplus of food and housing. Players can also integrate neighbouring domains by force or through diplomacy. These integrated population don't speak the same language initially, so they require time for the player to fully integrate them into the working population. When the player doesn't have enough food to support their population, there will be a famine and their population will shrink. In later eras, migration becomes more common as the world globalizes.
+
+### 5.2 Workforce Allocation
+Workers are assigned to different tasks by the player. These tasks include resource extraction, services (education or religious services for example), and technology research.
+
+### 5.3 Happiness & Unrest
+Populations can be more or less productive at their assigned tasks based on their happiness. The player can build amenities to improve happiness. Population growth has a natural degradation of happiness as cities get crowded. Unrest can occur when happiness drops too low, which leads to populations leaving the domain.
+
+---
+
+## 6. Technology & Research
+
+### 6.1 Technology Tree Structure
+For the prototype, this will use the Caveman2Cosmos tech-tree. This can be found here: https://github.com/caveman2cosmos/Caveman2Cosmos/blob/b0fc0fc72072a1bf72882d733f68baedf763684c/Assets/XML/Technologies/CIV4TechInfos.xml
+
+### 6.2 Research Mechanics
+Research points are generated by the workforce who are allocated towards research. The domain's literacy impacts the rate at which research points are gained. Buildings can also impact the rate of research point gain.
+
+### 6.4 Technology Effects
+Technologies unlock buildings, resources, and other technologies.
+
+---
+
+## 7. Buildings & Infrastructure
+
+### 7.1 Building Types
+For the prototype, we will use the Caveman2Cosmos buildings. This can be found here: https://raw.githubusercontent.com/caveman2cosmos/Caveman2Cosmos/b0fc0fc72072a1bf72882d733f68baedf763684c/Assets/XML/Buildings/Regular_CIV4BuildingInfos.xml
+
+### 7.2 Building Requirements
+See the Caveman2Cosmos buildings XML link.
+
+### 7.3 Building Effects
+Given the number of buildings, this will not be elaborated here in the design document.
+
+---
+
+## 8. Government & Civics
+
+### 8.1 Government Types
+- Tribal
+- Chiefdom
+- Democracy
+- Monarchy
+- Republic
+- Techocracy
+- Oligarchy
+- Autocracy
+- Anarchy
+- Corpocracy
+
+### 8.2 Civic Policies
+To be described later
+
+### 8.3 Government Transitions
+As governments are unlocked, they provide different bonuses.
+
+---
+
+
+## 10. Automation & Idle Mechanics
+
+### 10.1 Offline Progress
+Resources are gained up until they reach their capacity. Any under construction buildings have their construction continued offline until they are complete. Any technologies being researched are continued offline.
+
+### 10.2 Automation Unlocks
+Players can't automate most tasks. Certain technologies allow the player to queue buildings and technologies to be researched.
+
+---
+
+## 11. Events & Dynamics
+
+### 11.2 Historical Events
+Certain historical events can occur, such as:
+- The Black Plague 
+- Religious Reformation
+- Volcanic Eruptions
+
+---
+
+## 15. User Interface & Experience
+
+### 15.1 Information Architecture
+The interface is text-based with buttons for players to allocate workers.
+
+### 15.2 Primary Screens
+[Main views the player navigates]
+
+---
+
+## 16. Balance & Tuning
+
+### 16.1 Pacing Goals
+Discovering all of the technologies should take the player about 2 weeks on their first playthrough. 
+
+---
+
+## 17. Technical Design
+
+### 17.1 Technology Stack
+- Python 3.13
+- [Libraries/Frameworks TBD]
+
+### 17.2 Save System
+[How progress is saved and loaded]
+
+### 17.3 Data Structures
+[Key data organization patterns]
+
+### 17.4 Performance Considerations
+[How to handle complex calculations for idle games]
+
+### 17.5 Extensibility
+[Modding support or future expansion]
+
+---

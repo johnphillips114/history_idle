@@ -1,0 +1,754 @@
+"""REPL interface for History Idle game."""
+
+import time
+import sys
+import select
+import tty
+import termios
+from typing import Optional
+from ..models import Civilization, WorkforceTask
+from ..systems.game_loop import GameLoop
+from ..utils.save_system import SaveSystem
+
+
+class GameREPL:
+    """Interactive REPL interface for the game."""
+
+    def __init__(self, civilization: Civilization, game_loop: GameLoop, save_system: SaveSystem, game_data_manager=None):
+        self.civilization = civilization
+        self.game_loop = game_loop
+        self.save_system = save_system
+        self.game_data = game_data_manager
+        self.running = True
+        self.last_display_time = time.time()
+        self.debug_mode = False
+
+        # Track resource states for notifications
+        self.last_resource_states = {}
+
+        # Terminal settings (for Unix-like systems)
+        self.old_terminal_settings = None
+
+        # Command mapping
+        self.commands = {
+            'help': self.cmd_help,
+            'h': self.cmd_help,
+            'resources': self.cmd_resources,
+            'res': self.cmd_resources,
+            'available_resources': self.cmd_available_resources,
+            'avail_res': self.cmd_available_resources,
+            'population': self.cmd_population,
+            'pop': self.cmd_population,
+            'allocate': self.cmd_allocate,
+            'alloc': self.cmd_allocate,
+            'deallocate': self.cmd_deallocate,
+            'dealloc': self.cmd_deallocate,
+            'technologies': self.cmd_technologies,
+            'tech': self.cmd_technologies,
+            'research': self.cmd_research,
+            'buildings': self.cmd_buildings,
+            'build': self.cmd_build,
+            'status': self.cmd_status,
+            'save': self.cmd_save,
+            'quit': self.cmd_quit,
+            'exit': self.cmd_quit,
+            'q': self.cmd_quit,
+            'debug': self.cmd_debug,
+        }
+
+    def start(self):
+        """Start the REPL loop."""
+        self.print_welcome()
+        self.game_loop.start()
+
+        # Set terminal to raw mode on Unix for character-by-character input
+        if sys.platform != 'win32' and sys.stdin.isatty():
+            try:
+                self.old_terminal_settings = termios.tcgetattr(sys.stdin)
+                tty.setcbreak(sys.stdin.fileno())
+            except:
+                pass  # Fall back to line mode if raw mode fails
+
+        # Input buffer for accumulating typed characters
+        input_buffer = ""
+
+        # Show initial prompt
+        print("\n> ", end='', flush=True)
+
+        try:
+            while self.running:
+                try:
+                    # Auto-update every second
+                    current_time = time.time()
+                    if current_time - self.last_display_time > 1.0:
+                        update = self.game_loop.tick()
+                        self.last_display_time = current_time
+
+                        # Print notifications for completed techs/buildings
+                        notifications_printed = False
+                        if update.get('completed_techs'):
+                            for tech_name in update['completed_techs']:
+                                print(f"\r\033[K🎓 Technology completed: {tech_name}!")
+                                notifications_printed = True
+
+                        if update.get('completed_buildings'):
+                            for building_name in update['completed_buildings']:
+                                print(f"\r\033[K🏗️  Building completed: {building_name}!")
+                                notifications_printed = True
+
+                        # Check for resource state changes
+                        had_notification = self._check_resource_notifications_silent()
+                        if had_notification:
+                            notifications_printed = True
+
+                        # Print debug info if enabled
+                        if self.debug_mode:
+                            self._print_debug_update(update)
+                            notifications_printed = True
+
+                        # Redraw prompt with current buffer if notifications were shown
+                        if notifications_printed:
+                            print(f"> {input_buffer}", end='', flush=True)
+
+                    # Check for input without blocking
+                    if sys.platform != 'win32' and self.old_terminal_settings:
+                        # Use select on Unix-like systems with raw terminal
+                        if select.select([sys.stdin], [], [], 0.1)[0]:
+                            char = sys.stdin.read(1)
+                            if char == '\n' or char == '\r':
+                                # Process command
+                                command = input_buffer.strip()
+                                input_buffer = ""
+                                print()  # New line after command
+
+                                if command:
+                                    self.process_command(command)
+
+                                if self.running:
+                                    print("> ", end='', flush=True)
+                            elif char == '\x7f' or char == '\x08':  # Backspace
+                                if input_buffer:
+                                    input_buffer = input_buffer[:-1]
+                                    print('\b \b', end='', flush=True)
+                            elif char == '\x03':  # Ctrl+C
+                                raise KeyboardInterrupt()
+                            elif ord(char) >= 32:  # Printable characters
+                                input_buffer += char
+                                print(char, end='', flush=True)
+                    else:
+                        # Fallback for Windows or non-TTY - use blocking input with timeout
+                        time.sleep(0.1)
+
+                except KeyboardInterrupt:
+                    print("\n\nUse 'quit' to exit.")
+                    input_buffer = ""
+                    print("> ", end='', flush=True)
+                    continue
+                except EOFError:
+                    break
+
+        finally:
+            self.cleanup()
+
+    def print_welcome(self):
+        """Print welcome message."""
+        print("\n" + "="*60)
+        print("HISTORY IDLE - Interactive Mode")
+        print("="*60)
+        print(f"\nCivilization: {self.civilization.name}")
+        print(f"Location: {self.civilization.starting_location.value.replace('_', ' ').title()}")
+        print(f"Era: {self.civilization.current_era.value.title()}")
+        print(f"Government: {self.civilization.government.value.title()}")
+
+        # Display current resources
+        print("\n--- Resources ---")
+        if self.civilization.resources.resources:
+            for res_id, resource in sorted(self.civilization.resources.resources.items()):
+                rate_str = ""
+                if resource.net_rate != 0:
+                    rate_str = f" [{resource.net_rate:+.2f}/s]"
+                print(f"  {resource.resource_type.name:20} {resource.amount:8.1f}/{resource.capacity:.1f}{rate_str}")
+        else:
+            print("  No resources")
+
+        # Display current research
+        print("\n--- Research ---")
+        if self.civilization.tech_tree.current_research:
+            current = self.civilization.tech_tree.current_research
+            progress = current.progress_percentage * 100
+            print(f"  Currently Researching: {current.tech_def.name}")
+            print(f"  Progress: {progress:.1f}% ({current.research_points:.1f}/{current.tech_def.research_cost:.1f})")
+        else:
+            print("  No active research")
+            available = self.civilization.tech_tree.get_available_technologies()
+            if available:
+                print(f"  {len(available)} technologies available to research")
+                print(f"  Use 'tech' to view them and 'research <tech_id>' to start")
+
+        print("\n--- Population ---")
+        print(f"  Total: {self.civilization.population.total}")
+        print(f"  Idle Workers: {self.civilization.population.idle_workers}")
+        print(f"  Allocated Workers: {self.civilization.population.allocated_workers}")
+
+        print("\nType 'help' for available commands.")
+
+    def process_command(self, command_line: str):
+        """Process a command from user input."""
+        parts = command_line.split()
+        if not parts:
+            return
+
+        command = parts[0].lower()
+        args = parts[1:]
+
+        if command in self.commands:
+            try:
+                self.commands[command](args)
+            except Exception as e:
+                print(f"Error executing command: {e}")
+        else:
+            print(f"Unknown command: {command}. Type 'help' for available commands.")
+
+    def cmd_help(self, args):
+        """Display help information."""
+        print("\n=== Available Commands ===")
+        print("\nGeneral:")
+        print("  help, h                  - Show this help message")
+        print("  status                   - Show overall civilization status")
+        print("  debug                    - Toggle debug mode on/off")
+        print("  save                     - Save the game")
+        print("  quit, exit, q            - Save and exit the game")
+
+        print("\nResources:")
+        print("  resources, res           - Display current resources")
+        print("  available_resources      - List all extractable resources")
+
+        print("\nPopulation:")
+        print("  population, pop          - Display population and workforce info")
+        print("  allocate <resource> <count> - Allocate workers to extract a resource")
+        print("    Tasks: research, production")
+        print("    Resources: use resource ID from available_resources")
+        print("    Example: allocate wheat 5")
+        print("  deallocate <resource> <count> - Remove workers from a task")
+
+        print("\nTechnology:")
+        print("  technologies, tech       - List available technologies")
+        print("  research <tech_id>       - Start researching a technology")
+
+        print("\nBuildings:")
+        print("  buildings                - List available buildings")
+        print("  build <building_id>      - Start constructing a building")
+
+    def cmd_status(self, args):
+        """Display overall status."""
+        print("\n=== Civilization Status ===")
+        print(f"Name: {self.civilization.name}")
+        print(f"Era: {self.civilization.current_era.value.title()}")
+        print(f"Government: {self.civilization.government.value.title()}")
+        print(f"Game Time: {self.civilization.game_time:.1f}s")
+        print(f"\nPopulation: {self.civilization.population.total}")
+        print(f"Happiness: {self.civilization.population.happiness:.2f}")
+        print(f"Literacy: {self.civilization.population.literacy:.2%}")
+        print(f"\nTechnologies: {len(self.civilization.tech_tree.researched)}")
+        print(f"Buildings: {len(self.civilization.buildings.buildings)}")
+        print(f"Prestige Points: {self.civilization.prestige_points}")
+
+    def cmd_resources(self, args):
+        """Display current resources."""
+        print("\n=== Resources ===")
+
+        if not self.civilization.resources.resources:
+            print("No resources available.")
+            return
+
+        for res_id, resource in sorted(self.civilization.resources.resources.items()):
+            # Calculate time to full/empty
+            status = ""
+            remaining_to_cap = resource.capacity - resource.amount
+            if resource.net_rate > 0 and not resource.is_full:
+                time_to_full = remaining_to_cap / resource.net_rate
+                status = f" (Full in {self._format_time(time_to_full)})"
+            elif resource.net_rate < 0 and not resource.is_empty:
+                time_to_empty = resource.amount / abs(resource.net_rate)
+                status = f" (Empty in {self._format_time(time_to_empty)})"
+
+            rate_str = ""
+            if resource.net_rate != 0:
+                rate_str = f" [{resource.net_rate:+.2f}/s]"
+
+            print(f"  {resource.resource_type.name:20} {resource.amount:8.1f}/{resource.capacity:.1f}{rate_str}{status}")
+
+    def cmd_available_resources(self, args):
+        """Display all extractable resources available based on researched technologies."""
+        if self.game_data is None:
+            print("Game data not available.")
+            return
+
+        print("\n=== Available Resources ===")
+
+        # Get researched tech IDs
+        researched_techs = self.civilization.tech_tree.researched
+
+        # Filter resources by:
+        # 1. Must be in civilization's available_resources set
+        # 2. Must have required tech researched (or no tech required)
+        available = []
+        locked_by_availability = []
+        locked_by_tech = []
+
+        for resource in self.game_data.resources.values():
+            # Check if resource is in the civilization's available resources
+            if resource.id not in self.civilization.available_resources:
+                locked_by_availability.append(resource)
+                continue
+
+            # Check tech requirements
+            if resource.tech_reveal is None or resource.tech_reveal in researched_techs:
+                available.append(resource)
+            else:
+                locked_by_tech.append(resource)
+
+        if available:
+            print(f"\n{len(available)} resources available for extraction:")
+            # Group by category
+            from ..models.resource import ResourceCategory
+            for category in ResourceCategory:
+                category_resources = [r for r in available if r.category == category]
+                if category_resources:
+                    print(f"\n  {category.value.upper()}:")
+                    for resource in sorted(category_resources, key=lambda r: r.name):
+                        bonus_class_str = f" [{resource.bonus_class}]" if resource.bonus_class else ""
+                        print(f"    - {resource.name}{bonus_class_str} (ID: {resource.id})")
+        else:
+            print("\nNo resources available yet.")
+
+        if locked_by_tech:
+            print(f"\n{len(locked_by_tech)} resources in your territory but locked (require technology):")
+            for resource in sorted(locked_by_tech, key=lambda r: r.name):
+                tech_name = resource.tech_reveal.replace('_', ' ').title() if resource.tech_reveal else "Unknown"
+                print(f"  - {resource.name} (requires: {tech_name})")
+
+    def cmd_population(self, args):
+        """Display population information."""
+        pop = self.civilization.population
+
+        print("\n=== Population ===")
+        print(f"Total Population: {pop.total}")
+        print(f"Housing Capacity: {pop.housing_capacity}")
+        print(f"Happiness: {pop.happiness:.2f}")
+        print(f"Literacy: {pop.literacy:.2%}")
+        print(f"Growth Rate: {pop.growth_rate:.2%}/day")
+        print(f"\nIdle Workers: {pop.idle_workers}")
+        print(f"Allocated Workers: {pop.allocated_workers}")
+
+        if pop.allocations:
+            print("\n--- Workforce Allocation ---")
+            for allocation in pop.allocations:
+                task_name = allocation.task.value.replace('_', ' ').title()
+                detail = ""
+                if allocation.resource_id:
+                    detail = f" ({allocation.resource_id})"
+                elif allocation.building_id:
+                    detail = f" ({allocation.building_id})"
+                print(f"  {task_name}{detail}: {allocation.count} workers")
+
+    def cmd_allocate(self, args):
+        """Allocate workers to a task."""
+        if len(args) < 2:
+            print("Usage: allocate <resource_id> <count>")
+            print("Tasks: research, production")
+            print("Resources: any available crop resource (use available_resources to see list)")
+            return
+
+        task_name = args[0].lower()
+        try:
+            count = int(args[1])
+        except ValueError:
+            print("Count must be a number.")
+            return
+
+        # Check if it's a special task
+        if task_name == "research":
+            allocated = self.civilization.population.allocate_workers(
+                WorkforceTask.RESEARCH,
+                count
+            )
+            print(f"Allocated {allocated} workers to research.")
+        elif task_name == "production":
+            allocated = self.civilization.population.allocate_workers(
+                WorkforceTask.CONSTRUCTION,
+                count
+            )
+            print(f"Allocated {allocated} workers to production.")
+        else:
+            # Check if it's a resource from game data
+            if self.game_data is None:
+                print("Game data not available.")
+                return
+
+            resource = self.game_data.resources.get(task_name)
+            if resource is None:
+                print(f"Unknown resource or task: {task_name}")
+                print("Use 'available_resources' to see available resources")
+                return
+
+            # Check if resource is available to this civilization
+            if resource.id not in self.civilization.available_resources:
+                print(f"Resource '{resource.name}' is not available in your territory.")
+                return
+
+            # Check if tech requirement is met
+            researched_techs = self.civilization.tech_tree.researched
+            if resource.tech_reveal and resource.tech_reveal not in researched_techs:
+                tech_name = resource.tech_reveal.replace('_', ' ').title()
+                print(f"Resource '{resource.name}' requires technology: {tech_name}")
+                return
+
+            # Add resource to civilization's storage if not already there
+            if self.civilization.resources.get(resource.id) is None:
+                self.civilization.resources.add_resource_type(resource, initial_amount=0.0)
+
+            # Allocate workers to this resource
+            allocated = self.civilization.population.allocate_workers(
+                WorkforceTask.RESOURCE_EXTRACTION,
+                count,
+                resource_id=resource.id
+            )
+            print(f"Allocated {allocated} workers to {resource.name} extraction.")
+
+    def cmd_deallocate(self, args):
+        """Remove workers from a task."""
+        if len(args) < 2:
+            print("Usage: deallocate <resource_id_or_task> <count>")
+            print("Tasks: research, production")
+            print("Resources: any resource you've allocated workers to")
+            return
+
+        task_name = args[0].lower()
+        try:
+            count = int(args[1])
+        except ValueError:
+            print("Count must be a number.")
+            return
+
+        # Check if it's a special task
+        if task_name == "research":
+            deallocated = self.civilization.population.deallocate_workers(
+                WorkforceTask.RESEARCH,
+                count
+            )
+            print(f"Deallocated {deallocated} workers from research.")
+        elif task_name == "production":
+            deallocated = self.civilization.population.deallocate_workers(
+                WorkforceTask.CONSTRUCTION,
+                count
+            )
+            print(f"Deallocated {deallocated} workers from production.")
+        else:
+            # Try to deallocate from a resource
+            deallocated = self.civilization.population.deallocate_workers(
+                WorkforceTask.RESOURCE_EXTRACTION,
+                count,
+                resource_id=task_name
+            )
+            if deallocated > 0:
+                print(f"Deallocated {deallocated} workers from {task_name} extraction.")
+            else:
+                print(f"No workers allocated to {task_name}.")
+
+    def cmd_technologies(self, args):
+        """List technologies."""
+        print("\n=== Technologies ===")
+
+        # Current research
+        if self.civilization.tech_tree.current_research:
+            current = self.civilization.tech_tree.current_research
+            progress = current.progress_percentage * 100
+            print(f"\nCurrently Researching: {current.tech_def.name}")
+            print(f"Progress: {progress:.1f}% ({current.research_points:.1f}/{current.tech_def.research_cost:.1f})")
+        else:
+            print("\nNo active research.")
+
+        # Available technologies
+        available = self.civilization.tech_tree.get_available_technologies()
+        if available:
+            print(f"\n--- Available Technologies ({len(available)}) ---")
+            for tech in available[:10]:  # Show first 10
+                print(f"  {tech.id:20} - {tech.name} (Cost: {tech.research_cost:.0f})")
+        else:
+            print("\nNo technologies available to research.")
+
+        # Researched count
+        researched_count = len(self.civilization.tech_tree.researched)
+        print(f"\nTotal Researched: {researched_count}")
+
+    def cmd_research(self, args):
+        """Start researching a technology."""
+        if len(args) < 1:
+            print("Usage: research <tech_id>")
+            return
+
+        tech_id = args[0].lower()
+
+        if self.civilization.tech_tree.start_research(tech_id):
+            tech = self.civilization.tech_tree.get_technology(tech_id)
+            print(f"Started researching: {tech.name}")
+        else:
+            print(f"Cannot research '{tech_id}'. Check prerequisites or if already researched.")
+
+    def cmd_buildings(self, args):
+        """List buildings."""
+        print("\n=== Buildings ===")
+
+        # Existing buildings
+        if self.civilization.buildings.buildings:
+            print(f"\n--- Constructed Buildings ({len(self.civilization.buildings.buildings)}) ---")
+            for building in self.civilization.buildings.buildings:
+                active = "Active" if building.is_active else "Inactive"
+                workers = f"{building.assigned_workers}/{building.max_workers}" if building.max_workers > 0 else "N/A"
+                print(f"  {building.definition.name} [{active}] Workers: {workers}")
+        else:
+            print("\nNo buildings constructed yet.")
+
+        # Under construction
+        if self.civilization.buildings.under_construction:
+            print(f"\n--- Under Construction ({len(self.civilization.buildings.under_construction)}) ---")
+            production_workers = self.civilization.population.get_workers_on_task(WorkforceTask.CONSTRUCTION)
+            for construction in self.civilization.buildings.under_construction:
+                progress = construction.progress_percentage * 100
+                remaining = construction.remaining_production
+                print(f"  {construction.building_def.name}: {progress:.1f}% ({construction.progress:.1f}/{construction.required_production:.1f} production)")
+                if production_workers > 0:
+                    time_remaining = remaining / (production_workers * 1.0) if production_workers > 0 else float('inf')
+                    print(f"    {production_workers} workers assigned, ~{time_remaining:.1f}s remaining")
+                else:
+                    print(f"    No workers assigned (construction paused)")
+
+        # Available to build
+        available = []
+        for building_def in self.civilization.buildings.building_definitions.values():
+            if self.civilization.buildings.can_build(building_def.id, self.civilization.tech_tree.researched):
+                available.append(building_def)
+
+        if available:
+            print(f"\n--- Available to Build ({len(available)}) ---")
+            for building_def in available[:10]:  # Show first 10
+                # Get adjusted costs based on how many have been built
+                adjusted_costs = self.civilization.buildings.get_adjusted_costs(building_def.id)
+                current_count = self.civilization.buildings.get_building_count(building_def.id)
+                costs_str = ", ".join([f"{cost.resource_id}: {cost.amount:.1f}" for cost in adjusted_costs])
+
+                print(f"  {building_def.id:20} - {building_def.name}")
+                if costs_str:
+                    print(f"    Cost: {costs_str}", end="")
+                    if current_count > 0:
+                        multiplier = self.civilization.buildings.get_cost_multiplier(building_def.id)
+                        print(f" ({multiplier:.2f}x multiplier, {current_count} built)")
+                    else:
+                        print()
+
+    def cmd_build(self, args):
+        """Start building construction."""
+        if len(args) < 1:
+            print("Usage: build <building_id>")
+            return
+
+        building_id = args[0].lower()
+
+        # Check if can build
+        if not self.civilization.buildings.can_build(building_id, self.civilization.tech_tree.researched):
+            print(f"Cannot build '{building_id}'. Check requirements.")
+            return
+
+        # Get building definition
+        building_def = self.civilization.buildings.get_building_definition(building_id)
+        if not building_def:
+            print(f"Unknown building: {building_id}")
+            return
+
+        # Get adjusted costs (accounts for multiple copies already built)
+        adjusted_costs = self.civilization.buildings.get_adjusted_costs(building_id)
+        current_count = self.civilization.buildings.get_building_count(building_id)
+        multiplier = self.civilization.buildings.get_cost_multiplier(building_id)
+
+        # Separate production costs from other costs (production is applied during construction, not upfront)
+        upfront_costs = [cost for cost in adjusted_costs if cost.resource_id != "production"]
+        production_costs = [cost for cost in adjusted_costs if cost.resource_id == "production"]
+
+        # Check and spend upfront costs (everything except production)
+        if upfront_costs and not self.civilization.can_afford_costs(upfront_costs):
+            print("Not enough resources!")
+            costs_str = ", ".join([f"{cost.resource_id}: {cost.amount:.1f}" for cost in upfront_costs])
+            print(f"Required: {costs_str}")
+            if current_count > 0:
+                print(f"(Cost increased by {multiplier:.2f}x due to {current_count} already built)")
+            return
+
+        if upfront_costs:
+            self.civilization.spend_costs(upfront_costs)
+
+        # Start construction
+        if self.civilization.buildings.start_construction(building_id):
+            print(f"Started construction: {building_def.name}")
+            if production_costs:
+                prod_amount = production_costs[0].amount
+                print(f"  Requires {prod_amount:.1f} production to complete")
+                production_workers = self.civilization.population.get_workers_on_task(WorkforceTask.CONSTRUCTION)
+                if production_workers > 0:
+                    time_estimate = prod_amount / (production_workers * 1.0)
+                    print(f"  Estimated time: {time_estimate:.1f}s with {production_workers} workers")
+                else:
+                    print(f"  (Assign workers to production to make progress)")
+            if current_count > 0:
+                print(f"  (This is copy #{current_count + 1})")
+        else:
+            print("Failed to start construction.")
+
+    def cmd_save(self, args):
+        """Save the game."""
+        if self.save_system.save_game(self.civilization, "autosave"):
+            print("Game saved successfully!")
+        else:
+            print("Failed to save game.")
+
+    def cmd_quit(self, args):
+        """Quit the game."""
+        print("\nSaving game...")
+        self.save_system.save_game(self.civilization, "autosave")
+        print("Goodbye!")
+        self.running = False
+
+    def cmd_debug(self, args):
+        """Toggle debug mode."""
+        self.debug_mode = not self.debug_mode
+        status = "enabled" if self.debug_mode else "disabled"
+        print(f"Debug mode {status}")
+
+        if self.debug_mode:
+            # Print current debug state immediately
+            self._print_debug_state()
+
+    def _print_debug_state(self):
+        """Print current debug state information."""
+        print("\n=== Debug State ===")
+
+        # Population info
+        pop = self.civilization.population
+        print(f"Population: {pop.total}")
+        print(f"Happiness: {pop.happiness:.2f}")
+        print(f"Literacy: {pop.literacy:.2%}")
+
+        # Worker allocations
+        print("\nWorker Allocations:")
+        for allocation in pop.allocations:
+            task_name = allocation.task.value
+            detail = f" (resource: {allocation.resource_id})" if allocation.resource_id else ""
+            print(f"  {task_name}{detail}: {allocation.count} workers")
+
+        # Calculate expected production rates
+        print("\nExpected Production Rates:")
+
+        food_workers = pop.get_workers_on_resource("food")
+        if food_workers > 0:
+            food_production_rate = food_workers * 2.0 * pop.happiness
+            print(f"  Food production: {food_production_rate:.2f}/s ({food_workers} workers × 2.0 × {pop.happiness:.2f} happiness)")
+        else:
+            print(f"  Food production: 0.00/s (no workers)")
+
+        food_consumption_rate = pop.calculate_food_consumption()
+        print(f"  Food consumption: {food_consumption_rate:.2f}/s ({pop.total} pop × {pop.food_consumption_per_capita:.2f})")
+        print(f"  Food net rate: {food_production_rate - food_consumption_rate if food_workers > 0 else -food_consumption_rate:.2f}/s")
+
+        research_workers = pop.get_workers_on_task(WorkforceTask.RESEARCH)
+        if research_workers > 0:
+            research_rate = research_workers * 1.0 * (1.0 + pop.literacy)
+            print(f"  Research production: {research_rate:.2f}/s ({research_workers} workers × 1.0 × {1.0 + pop.literacy:.2f})")
+        else:
+            print(f"  Research production: 0.00/s (no workers)")
+
+        # Current resource state
+        print("\nCurrent Resources:")
+        for res_id, resource in self.civilization.resources.resources.items():
+            print(f"  {resource.resource_type.name}: {resource.amount:.2f}/{resource.capacity:.2f}")
+            print(f"    Production: {resource.production_rate:.2f}/s, Consumption: {resource.consumption_rate:.2f}/s, Net: {resource.net_rate:.2f}/s")
+
+    def _check_resource_notifications(self):
+        """Check for resource state changes and notify user."""
+        self._check_resource_notifications_silent()
+
+    def _check_resource_notifications_silent(self) -> bool:
+        """Check for resource state changes and notify user. Returns True if notification was printed."""
+        food_resource = self.civilization.resources.get("food")
+        if not food_resource:
+            return False
+
+        # Get previous state
+        prev_state = self.last_resource_states.get("food", {})
+        prev_empty = prev_state.get("empty", False)
+        prev_full = prev_state.get("full", False)
+
+        # Check current state
+        current_empty = food_resource.is_empty
+        current_full = food_resource.is_full
+
+        notification_printed = False
+
+        # Notify on state changes
+        if current_empty and not prev_empty:
+            print(f"\r\033[K⚠️  WARNING: Food storage is empty! ({food_resource.amount:.1f}/{food_resource.capacity:.1f})")
+            if food_resource.net_rate < 0:
+                print(f"\r\033[K   Your population is starving! (Consumption: {food_resource.consumption_rate:.1f}/s, Production: {food_resource.production_rate:.1f}/s)")
+            notification_printed = True
+        elif current_full and not prev_full:
+            print(f"\r\033[K📦 Food storage is full! ({food_resource.amount:.1f}/{food_resource.capacity:.1f})")
+            if food_resource.production_rate > 0:
+                print(f"\r\033[K   Consider building more storage or reducing food production.")
+            notification_printed = True
+
+        # Update tracked state
+        self.last_resource_states["food"] = {
+            "empty": current_empty,
+            "full": current_full
+        }
+
+        return notification_printed
+
+    def _print_debug_update(self, update: dict):
+        """Print debug information after a game tick."""
+        delta = update.get('delta_time', 0.0)
+        print(f"\n[DEBUG] Tick: {delta:.3f}s elapsed")
+        print(f"  Happiness: {self.civilization.population.happiness:.2f}")
+
+        if update.get('resource_changes'):
+            print("  Resource changes:")
+            for res_id, change in update['resource_changes'].items():
+                print(f"    {res_id}: {change:+.2f}")
+
+        if update.get('population_change', 0) != 0:
+            print(f"  Population: {update['population_change']:+d}")
+
+        if update.get('completed_techs'):
+            print(f"  Completed techs: {', '.join(update['completed_techs'])}")
+
+        if update.get('completed_buildings'):
+            print(f"  Completed buildings: {', '.join(update['completed_buildings'])}")
+
+    def cleanup(self):
+        """Clean up before exit."""
+        self.game_loop.stop()
+
+        # Restore terminal settings
+        if self.old_terminal_settings and sys.stdin.isatty():
+            try:
+                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_terminal_settings)
+            except:
+                pass
+
+    def _format_time(self, seconds: float) -> str:
+        """Format seconds into human-readable time."""
+        if seconds < 60:
+            return f"{seconds:.1f}s"
+        elif seconds < 3600:
+            return f"{seconds/60:.1f}m"
+        else:
+            return f"{seconds/3600:.1f}h"

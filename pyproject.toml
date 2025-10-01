@@ -1,0 +1,10 @@
+[project]
+name = "history-idle"
+version = "0.1.0"
+description = "An incremental civilization game through history"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[project.scripts]
+history-idle = "history_idle.main:main"
