@@ -1,0 +1,78 @@
+{
+  "scavenging": {
+    "name": "Scavenging",
+    "description": "The ability to find and collect useful materials from nature.",
+    "quote": "Nature provides, if one knows where to look.",
+    "pedia": "Scavenging represents humanity's earliest survival strategy. Before our ancestors learned to hunt effectively, they survived by gathering plant materials, scavenging carcasses left by predators, and collecting whatever edible or useful items they could find. This fundamental skill laid the groundwork for more sophisticated resource gathering techniques.",
+
+    "research_cost": 50,
+    "prerequisites": [],
+    "era": "paleolithic",
+
+    "effects": {
+      "literacy_bonus": 0.01
+    }
+  },
+
+  "gathering": {
+    "name": "Gathering",
+    "description": "Systematic collection of wild plants and materials.",
+    "quote": "The seeds we gather today feed us tomorrow.",
+    "pedia": "Gathering evolved from random scavenging into a systematic practice. Early humans learned to identify edible plants, understand seasonal patterns, and return to productive locations. This knowledge was carefully passed down through generations, forming the basis of early human culture and eventually leading to agriculture.",
+
+    "research_cost": 100,
+    "prerequisites": ["scavenging"],
+    "era": "paleolithic",
+
+    "effects": {
+      "literacy_bonus": 0.02
+    }
+  },
+
+  "tool_making": {
+    "name": "Tool Making",
+    "description": "Crafting simple tools from stone and wood.",
+    "quote": "The first tool was the first step toward civilization.",
+    "pedia": "The development of tool-making marks a defining moment in human evolution. By shaping stones into cutting edges and attaching them to wooden handles, early humans extended their physical capabilities dramatically. These simple tools allowed for more efficient hunting, food preparation, and resource gathering.",
+
+    "research_cost": 150,
+    "prerequisites": ["scavenging"],
+    "era": "paleolithic",
+
+    "effects": {
+      "literacy_bonus": 0.02,
+      "housing_capacity": 2
+    }
+  },
+
+  "fire_making": {
+    "name": "Fire Making",
+    "description": "The controlled use of fire for warmth and cooking.",
+    "quote": "With fire, the night became ours.",
+    "pedia": "Mastery of fire transformed human existence. Fire provided warmth in cold climates, protection from predators, light during dark hours, and a means to cook food. Cooked food was easier to digest and safer to eat, contributing to better nutrition and health. The hearth became the center of social life.",
+
+    "research_cost": 200,
+    "prerequisites": ["scavenging"],
+    "era": "paleolithic",
+
+    "effects": {
+      "literacy_bonus": 0.03,
+      "housing_capacity": 3
+    }
+  },
+
+  "speech": {
+    "name": "Speech",
+    "description": "Development of complex verbal communication.",
+    "quote": "In the beginning was the word, and the word gave us power.",
+    "pedia": "The evolution of speech represents one of humanity's most significant achievements. Complex language allowed for the transmission of knowledge, coordination of group activities, and the development of abstract thought. Stories, warnings, and wisdom could now be shared across generations with unprecedented accuracy.",
+
+    "research_cost": 175,
+    "prerequisites": ["scavenging"],
+    "era": "paleolithic",
+
+    "effects": {
+      "literacy_bonus": 0.05
+    }
+  }
+}

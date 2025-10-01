@@ -1,0 +1,208 @@
+{
+  "civilizations": {
+    "ancient_people": {
+      "name": "Ancient People",
+      "city_names": ["First Settlement", "Riverside", "Hill Fort", "Stone Circle", "Forest Camp"],
+      "leaders": ["Elder Chief"]
+    },
+    "mesopotamian": {
+      "name": "Mesopotamian",
+      "city_names": ["Uruk", "Ur", "Babylon", "Nineveh", "Assur"],
+      "leaders": ["Sargon"]
+    },
+    "egyptian": {
+      "name": "Egyptian",
+      "city_names": ["Memphis", "Thebes", "Alexandria", "Giza", "Karnak"],
+      "leaders": ["Narmer"]
+    },
+    "chinese": {
+      "name": "Chinese",
+      "city_names": ["Beijing", "Chang'an", "Luoyang", "Kaifeng", "Nanjing"],
+      "leaders": ["Yu the Great"]
+    },
+    "indus": {
+      "name": "Indus",
+      "city_names": ["Mohenjo-daro", "Harappa", "Lothal", "Dholavira", "Rakhigarhi"],
+      "leaders": ["Ancient King"]
+    }
+  },
+
+  "starting_locations": {
+    "western_europe": {
+      "name": "Western Europe",
+      "description": "Temperate forests and fertile plains of western Europe.",
+      "preferred_terrains": ["grassland", "plains", "forest"]
+    },
+    "northern_europe": {
+      "name": "Northern Europe",
+      "description": "Cold forests and rocky coasts of Scandinavia.",
+      "preferred_terrains": ["forest", "tundra", "coast"]
+    },
+    "west_mediterranean": {
+      "name": "West Mediterranean",
+      "description": "Sunny coasts and hills surrounding the western Mediterranean.",
+      "preferred_terrains": ["coast", "hills", "grassland"]
+    },
+    "east_mediterranean": {
+      "name": "East Mediterranean",
+      "description": "Cradle of early civilizations along the eastern Mediterranean.",
+      "preferred_terrains": ["coast", "plains", "desert"]
+    },
+    "mesopotamia": {
+      "name": "Mesopotamia",
+      "description": "Fertile land between the Tigris and Euphrates rivers.",
+      "preferred_terrains": ["river", "plains", "marsh"]
+    },
+    "nile": {
+      "name": "Nile Valley",
+      "description": "Life-giving river valley through the desert.",
+      "preferred_terrains": ["river", "desert", "lush"]
+    },
+    "indus": {
+      "name": "Indus Valley",
+      "description": "Rich river valley in the Indian subcontinent.",
+      "preferred_terrains": ["river", "plains", "jungle"]
+    },
+    "yellow_river": {
+      "name": "Yellow River",
+      "description": "Birthplace of Chinese civilization along the Yellow River.",
+      "preferred_terrains": ["river", "plains", "grassland"]
+    },
+    "mesoamerican": {
+      "name": "Mesoamerica",
+      "description": "Tropical highlands and jungles of Central America.",
+      "preferred_terrains": ["jungle", "hills", "lush"]
+    },
+    "andes": {
+      "name": "Andes",
+      "description": "High mountain valleys of South America.",
+      "preferred_terrains": ["mountains", "hills", "grassland"]
+    }
+  },
+
+  "government_types": {
+    "tribal": {
+      "name": "Tribal",
+      "description": "Simple clan-based leadership.",
+      "bonuses": {}
+    },
+    "chiefdom": {
+      "name": "Chiefdom",
+      "description": "Leadership by a hereditary chief.",
+      "bonuses": {
+        "culture": 1
+      }
+    },
+    "democracy": {
+      "name": "Democracy",
+      "description": "Government by the people.",
+      "bonuses": {
+        "science": 2,
+        "gold": 2
+      }
+    },
+    "monarchy": {
+      "name": "Monarchy",
+      "description": "Rule by a hereditary sovereign.",
+      "bonuses": {
+        "military": 2,
+        "culture": 1
+      }
+    },
+    "republic": {
+      "name": "Republic",
+      "description": "Representative government.",
+      "bonuses": {
+        "gold": 3,
+        "science": 1
+      }
+    },
+    "technocracy": {
+      "name": "Technocracy",
+      "description": "Rule by technical experts.",
+      "bonuses": {
+        "science": 4
+      }
+    },
+    "oligarchy": {
+      "name": "Oligarchy",
+      "description": "Rule by a wealthy elite.",
+      "bonuses": {
+        "gold": 3
+      }
+    },
+    "autocracy": {
+      "name": "Autocracy",
+      "description": "Rule by a single absolute leader.",
+      "bonuses": {
+        "military": 3,
+        "production": 1
+      }
+    },
+    "anarchy": {
+      "name": "Anarchy",
+      "description": "Absence of central authority.",
+      "bonuses": {}
+    },
+    "corpocracy": {
+      "name": "Corpocracy",
+      "description": "Rule by corporate interests.",
+      "bonuses": {
+        "gold": 4
+      }
+    }
+  },
+
+  "eras": {
+    "paleolithic": {
+      "name": "Paleolithic",
+      "description": "The Stone Age of hunter-gatherers.",
+      "tech_cost_multiplier": 1.0
+    },
+    "neolithic": {
+      "name": "Neolithic",
+      "description": "The Agricultural Revolution.",
+      "tech_cost_multiplier": 1.5
+    },
+    "bronze_age": {
+      "name": "Bronze Age",
+      "description": "The age of early metalworking.",
+      "tech_cost_multiplier": 2.0
+    },
+    "iron_age": {
+      "name": "Iron Age",
+      "description": "Advanced metallurgy and empires.",
+      "tech_cost_multiplier": 3.0
+    },
+    "classical": {
+      "name": "Classical",
+      "description": "Great civilizations and philosophy.",
+      "tech_cost_multiplier": 4.0
+    },
+    "medieval": {
+      "name": "Medieval",
+      "description": "Feudalism and knights.",
+      "tech_cost_multiplier": 5.0
+    },
+    "renaissance": {
+      "name": "Renaissance",
+      "description": "Rebirth of art and science.",
+      "tech_cost_multiplier": 6.0
+    },
+    "industrial": {
+      "name": "Industrial",
+      "description": "Machines and mass production.",
+      "tech_cost_multiplier": 7.0
+    },
+    "modern": {
+      "name": "Modern",
+      "description": "The contemporary age.",
+      "tech_cost_multiplier": 8.0
+    },
+    "future": {
+      "name": "Future",
+      "description": "Beyond current technology.",
+      "tech_cost_multiplier": 10.0
+    }
+  }
+}

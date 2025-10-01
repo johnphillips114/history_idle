@@ -1,0 +1,89 @@
+{
+  "cave_shelter": {
+    "name": "Cave Shelter",
+    "description": "A natural cave providing shelter from the elements.",
+    "pedia": "Early humans sought refuge in caves, which offered protection from predators and harsh weather. These natural shelters became the first permanent dwelling places, allowing families to gather and communities to form.",
+    "quote": null,
+
+    "construction_cost": 50,
+    "construction_time": 50,
+    "required_tech": null,
+    "required_buildings": [],
+    "required_resources": [],
+    "vicinity_bonus": null,
+    "prereq_terrain": [],
+
+    "bonuses": {
+      "housing": 5,
+      "culture": 1
+    },
+
+    "category": "housing",
+    "max_count": 1
+  },
+
+  "settler": {
+    "name": "Settler",
+    "description": "A group ready to found a new city.",
+    "pedia": "Settlers represent a group of people prepared to leave their homeland and establish a new settlement. This expansion is crucial for civilization growth.",
+    "quote": null,
+
+    "construction_cost": 100,
+    "construction_time": 100,
+    "required_tech": null,
+    "required_buildings": [],
+    "required_resources": [],
+    "vicinity_bonus": null,
+    "prereq_terrain": [],
+
+    "bonuses": {},
+
+    "category": "infrastructure",
+    "max_count": -1
+  },
+
+  "grain_storage": {
+    "name": "Grain Storage",
+    "description": "A structure for storing harvested grains.",
+    "pedia": "The development of grain storage was a revolutionary advancement in human civilization. By storing surplus food, communities could survive lean seasons and support larger populations.",
+    "quote": null,
+
+    "construction_cost": 75,
+    "construction_time": 75,
+    "required_tech": "gathering",
+    "required_buildings": [],
+    "required_resources": [],
+    "vicinity_bonus": null,
+    "prereq_terrain": [],
+
+    "bonuses": {
+      "growth": 2
+    },
+
+    "category": "storage",
+    "max_count": -1
+  },
+
+  "primitive_shrine": {
+    "name": "Primitive Shrine",
+    "description": "A sacred place for early spiritual practices.",
+    "pedia": "Primitive shrines mark humanity's first attempts to commune with the divine and understand the mysteries of existence. These sacred spaces fostered community bonds and cultural identity.",
+    "quote": "In the presence of the unknown, we create meaning.",
+
+    "construction_cost": 60,
+    "construction_time": 60,
+    "required_tech": null,
+    "required_buildings": [],
+    "required_resources": [],
+    "vicinity_bonus": null,
+    "prereq_terrain": [],
+
+    "bonuses": {
+      "culture": 3,
+      "religion": 2
+    },
+
+    "category": "cultural",
+    "max_count": 1
+  }
+}

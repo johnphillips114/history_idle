@@ -1,0 +1,177 @@
+{
+  "grassland": {
+    "name": "Grassland",
+    "description": "Fertile plains covered in grass, ideal for settlement.",
+    "can_found": true,
+    "yields": {
+      "food": 2.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+
+  "plains": {
+    "name": "Plains",
+    "description": "Flat, open land suitable for agriculture.",
+    "can_found": true,
+    "yields": {
+      "food": 1.0,
+      "production": 1.0,
+      "currency": 0.0
+    }
+  },
+
+  "forest": {
+    "name": "Forest",
+    "description": "Dense woodland providing timber and game.",
+    "can_found": true,
+    "yields": {
+      "food": 1.0,
+      "production": 2.0,
+      "currency": 0.0
+    }
+  },
+
+  "hills": {
+    "name": "Hills",
+    "description": "Rolling elevated terrain rich in minerals.",
+    "can_found": true,
+    "yields": {
+      "food": 0.0,
+      "production": 3.0,
+      "currency": 0.0
+    }
+  },
+
+  "mountains": {
+    "name": "Mountains",
+    "description": "Towering peaks, difficult but resource-rich.",
+    "can_found": false,
+    "yields": {
+      "food": 0.0,
+      "production": 1.0,
+      "currency": 0.0
+    }
+  },
+
+  "desert": {
+    "name": "Desert",
+    "description": "Arid land with sparse vegetation.",
+    "can_found": true,
+    "yields": {
+      "food": 0.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+
+  "tundra": {
+    "name": "Tundra",
+    "description": "Cold, frozen land with limited resources.",
+    "can_found": true,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+
+  "snow": {
+    "name": "Snow",
+    "description": "Permanently frozen wasteland.",
+    "can_found": false,
+    "yields": {
+      "food": 0.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+
+  "coast": {
+    "name": "Coast",
+    "description": "Shallow water along the shore.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+
+  "ocean": {
+    "name": "Ocean",
+    "description": "Deep water far from land.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 2.0
+    }
+  },
+
+  "jungle": {
+    "name": "Jungle",
+    "description": "Dense tropical forest teeming with life.",
+    "can_found": true,
+    "yields": {
+      "food": 1.0,
+      "production": 1.0,
+      "currency": 0.0
+    }
+  },
+
+  "marsh": {
+    "name": "Marsh",
+    "description": "Wetland with standing water and vegetation.",
+    "can_found": true,
+    "yields": {
+      "food": 2.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+
+  "lush": {
+    "name": "Lush",
+    "description": "Exceptionally fertile land bursting with growth.",
+    "can_found": true,
+    "yields": {
+      "food": 3.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+
+  "rocky": {
+    "name": "Rocky",
+    "description": "Rough terrain covered in stones and boulders.",
+    "can_found": true,
+    "yields": {
+      "food": 0.0,
+      "production": 2.0,
+      "currency": 0.0
+    }
+  },
+
+  "river": {
+    "name": "River",
+    "description": "Fresh flowing water supporting life.",
+    "can_found": false,
+    "yields": {
+      "food": 2.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+
+  "lake": {
+    "name": "Lake",
+    "description": "Inland body of fresh water.",
+    "can_found": false,
+    "yields": {
+      "food": 2.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  }
+}

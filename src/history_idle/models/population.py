@@ -179,6 +179,10 @@ class Population:
             self.food_for_growth = self.food_for_growth_capacity
             return -1
 
+        # If at minimum population (10), prevent food from going negative
+        if self.total <= 10 and self.food_for_growth < 0.0:
+            self.food_for_growth = 0.0
+
         return total_growth
 
     def update_happiness(self) -> None:

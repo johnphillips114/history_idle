@@ -1,0 +1,111 @@
+{
+  "wheat": {
+    "name": "Wheat",
+    "description": "A nutritious grain crop that thrives in temperate climates.",
+    "category": "food",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["grassland", "plains"]
+  },
+
+  "barley": {
+    "name": "Barley",
+    "description": "A hardy grain that grows in diverse conditions.",
+    "category": "food",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["grassland", "plains"]
+  },
+
+  "corn": {
+    "name": "Corn",
+    "description": "A staple crop native to the Americas.",
+    "category": "food",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["grassland", "lush"]
+  },
+
+  "berries": {
+    "name": "Berries",
+    "description": "Wild berries providing quick sustenance.",
+    "category": "food",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 50.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["forest", "grassland"]
+  },
+
+  "stone": {
+    "name": "Stone",
+    "description": "Hard rock suitable for tools and construction.",
+    "category": "strategic",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 200.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["hills", "mountains", "rocky"]
+  },
+
+  "wood": {
+    "name": "Wood",
+    "description": "Timber from forests, essential for building.",
+    "category": "strategic",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 150.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["forest", "jungle"]
+  },
+
+  "flint": {
+    "name": "Flint",
+    "description": "A hard stone that can be shaped into sharp tools.",
+    "category": "strategic",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "tool_making",
+    "compatible_terrains": ["hills", "rocky", "grassland"]
+  },
+
+  "clay": {
+    "name": "Clay",
+    "description": "Malleable earth useful for pottery and construction.",
+    "category": "strategic",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["river", "marsh", "grassland"]
+  },
+
+  "fish": {
+    "name": "Fish",
+    "description": "Aquatic creatures providing protein.",
+    "category": "food",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 75.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["coast", "river", "lake"]
+  },
+
+  "fur": {
+    "name": "Fur",
+    "description": "Animal pelts for warmth and trade.",
+    "category": "luxury",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 50.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["tundra", "snow", "forest"]
+  }
+}
