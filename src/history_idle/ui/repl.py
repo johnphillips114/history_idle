@@ -36,8 +36,8 @@ class GameREPL:
             'h': self.cmd_help,
             'resources': self.cmd_resources,
             'res': self.cmd_resources,
-            'available_resources': self.cmd_available_resources,
-            'avail_res': self.cmd_available_resources,
+            'available': self.cmd_available_resources,
+            'avail': self.cmd_available_resources,
             'population': self.cmd_population,
             'pop': self.cmd_population,
             'allocate': self.cmd_allocate,
@@ -251,13 +251,13 @@ class GameREPL:
 
         print("\nResources:")
         print("  resources, res           - Display current resources")
-        print("  available_resources      - List all extractable resources")
+        print("  available, avail         - List all extractable resources")
 
         print("\nPopulation:")
         print("  population, pop          - Display population and workforce info")
         print("  allocate <resource> <count> - Allocate workers to extract a resource")
         print("    Tasks: research, production")
-        print("    Resources: use resource ID from available_resources")
+        print("    Resources: use resource ID from 'available' command")
         print("    Example: allocate wheat 5")
         print("  deallocate <resource> <count> - Remove workers from a task")
 
@@ -420,7 +420,7 @@ class GameREPL:
         if len(args) < 2:
             print("Usage: allocate <resource_id> <count>")
             print("Tasks: research, production")
-            print("Resources: any available crop resource (use available_resources to see list)")
+            print("Resources: any available crop resource (use 'available' to see list)")
             return
 
         task_name = args[0].lower()
@@ -452,7 +452,7 @@ class GameREPL:
             resource = self.game_data.resources.get(task_name)
             if resource is None:
                 print(f"Unknown resource or task: {task_name}")
-                print("Use 'available_resources' to see available resources")
+                print("Use 'available' to see available resources")
                 return
 
             # Get active city

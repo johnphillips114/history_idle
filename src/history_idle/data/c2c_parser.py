@@ -306,6 +306,23 @@ class C2CDataParser:
                     if total_specialists > 0:
                         effects['housing'] = float(total_specialists)
 
+                # Extract flavors (building bonuses to abstract resources)
+                flavors = {}
+                flavors_elem = building_info.find('Flavors')
+                if flavors_elem is not None:
+                    for flavor in flavors_elem.findall('Flavor'):
+                        flavor_type_elem = flavor.find('FlavorType')
+                        flavor_value_elem = flavor.find('iFlavor')
+
+                        if flavor_type_elem is not None and flavor_value_elem is not None:
+                            if flavor_type_elem.text and flavor_value_elem.text:
+                                try:
+                                    flavor_type = flavor_type_elem.text.replace('FLAVOR_', '').lower()
+                                    flavor_value = int(flavor_value_elem.text)
+                                    flavors[flavor_type] = flavor_value
+                                except ValueError:
+                                    pass
+
                 if building_id and name:
                     # Categorize building
                     category = C2CDataParser._categorize_building(building_id, effects)
@@ -320,7 +337,8 @@ class C2CDataParser:
                         required_tech=required_tech,
                         required_resources=required_resources,
                         required_buildings=required_buildings,
-                        effects=effects
+                        effects=effects,
+                        flavors=flavors
                     )
                     buildings.append(building)
 

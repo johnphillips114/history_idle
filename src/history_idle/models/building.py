@@ -40,6 +40,7 @@ class BuildingDefinition:
     max_count: int = 1  # Maximum number that can be built (1 = unique building, -1 = unlimited)
     effects: dict[str, float] = field(default_factory=dict)
     worker_slots: int = 0  # Number of workers this building can employ
+    flavors: dict[str, int] = field(default_factory=dict)  # FlavorType -> iFlavor value
 
     def __hash__(self):
         return hash(self.id)
