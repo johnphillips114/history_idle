@@ -196,9 +196,13 @@ class City:
             "resource_changes": {}
         }
 
-        # Calculate and apply crop resource production from workers
+        # Calculate and apply crop resource production from workers and building flavors
         total_crop_production = 0.0
         total_crop_production_rate = 0.0
+
+        # Get growth bonus from building flavors (applies to all crop resources)
+        growth_flavor_bonus = self._get_flavor_bonus('growth')
+
         for resource_qty in self.resources.resources.values():
             if hasattr(resource_qty.resource_type, 'bonus_class') and resource_qty.resource_type.bonus_class == 'crop':
                 crop_workers = self.population.get_workers_on_resource(resource_qty.resource_type.id)
@@ -213,6 +217,24 @@ class City:
                     update_summary["resource_changes"][resource_qty.resource_type.id] = added
                 else:
                     resource_qty.production_rate = 0.0
+
+        # Apply growth flavor bonus to food storage (distributed evenly across crop resources)
+        if growth_flavor_bonus > 0:
+            crop_resources = [rq for rq in self.resources.resources.values()
+                            if hasattr(rq.resource_type, 'bonus_class') and rq.resource_type.bonus_class == 'crop']
+            if crop_resources:
+                # Distribute growth bonus evenly across all crop resources
+                bonus_per_crop = growth_flavor_bonus / len(crop_resources)
+                for resource_qty in crop_resources:
+                    bonus_production = bonus_per_crop * delta_time
+                    added = resource_qty.add(bonus_production)
+                    total_crop_production += added
+                    if resource_qty.resource_type.id in update_summary["resource_changes"]:
+                        update_summary["resource_changes"][resource_qty.resource_type.id] += added
+                    else:
+                        update_summary["resource_changes"][resource_qty.resource_type.id] = added
+
+                total_crop_production_rate += growth_flavor_bonus
 
         # Update population - consume food from crops
         total_food = self.get_total_food_from_crops()
@@ -253,16 +275,25 @@ class City:
         self.population.update_happiness()
         update_summary["population_change"] = population_change
 
-        # Update production (workers apply production directly to construction)
+        # Update flavor-based abstract resources from buildings
+        # (Do this before calculating production so we can include flavor bonuses)
+        self._update_flavor_resources()
+
+        # Update production (workers + building flavors apply production directly to construction)
         production_workers = self.population.get_workers_on_task(WorkforceTask.CONSTRUCTION)
+        production_from_workers = production_workers * 1.0
+
+        # Get production bonus from building flavors
+        production_from_flavors = self._get_flavor_bonus('production')
+
         production_resource = self.resources.get("production")
         if production_resource:
-            # Production rate shown in UI, but not accumulated
-            production_resource.production_rate = production_workers * 1.0
+            # Production rate shown in UI (workers + building bonuses)
+            production_resource.production_rate = production_from_workers + production_from_flavors
             production_resource.amount = 0.0  # Always 0, can't stockpile
 
-        # Calculate production for this tick: workers * rate * time
-        production_this_tick = production_workers * 1.0 * delta_time
+        # Calculate production for this tick: (workers + flavors) * time
+        production_this_tick = (production_from_workers + production_from_flavors) * delta_time
 
         # Update building construction (apply production to buildings under construction)
         completed_buildings = self.buildings.update_construction(production_this_tick)
@@ -272,9 +303,6 @@ class City:
 
         # Update housing capacity from buildings
         self._update_housing_capacity()
-
-        # Update flavor-based abstract resources from buildings
-        self._update_flavor_resources()
 
         return update_summary
 
@@ -289,12 +317,27 @@ class City:
         building_bonus = self.buildings.get_total_effect("housing")
         self.population.housing_capacity = base_capacity + int(building_bonus)
 
+    def _get_flavor_bonus(self, flavor_type: str) -> float:
+        """Get total bonus from buildings for a specific flavor type.
+
+        Args:
+            flavor_type: The flavor type (e.g., 'production', 'military', 'gold')
+
+        Returns:
+            Total flavor bonus from all active buildings
+        """
+        total = 0.0
+        for building in self.buildings.buildings:
+            if building.is_active and building.definition.flavors:
+                total += building.definition.flavors.get(flavor_type, 0)
+        return float(total)
+
     def _update_flavor_resources(self) -> None:
         """Update abstract resources based on building flavors."""
         # Mapping from flavor types to resource IDs
+        # Note: 'growth' and 'production' are excluded because they're already handled
+        # by crop workers and construction workers respectively
         flavor_to_resource = {
-            'growth': 'food',
-            'production': 'production',
             'science': 'research',  # Research is civilization-wide, but we'll track it here
             'military': 'military',
             'gold': 'currency',

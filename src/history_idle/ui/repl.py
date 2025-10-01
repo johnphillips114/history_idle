@@ -574,8 +574,11 @@ class GameREPL:
             print(f"\n--- Constructed Buildings ({len(self.civilization.buildings.buildings)}) ---")
             for building in self.civilization.buildings.buildings:
                 active = "Active" if building.is_active else "Inactive"
-                workers = f"{building.assigned_workers}/{building.max_workers}" if building.max_workers > 0 else "N/A"
-                print(f"  {building.definition.name} [{active}] Workers: {workers}")
+                if building.max_workers > 0:
+                    workers = f"{building.assigned_workers}/{building.max_workers}"
+                    print(f"  {building.definition.name} [{active}] Workers: {workers}")
+                else:
+                    print(f"  {building.definition.name} [{active}]")
         else:
             print("\nNo buildings constructed yet.")
 
