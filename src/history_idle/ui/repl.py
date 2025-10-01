@@ -49,6 +49,9 @@ class GameREPL:
             'research': self.cmd_research,
             'buildings': self.cmd_buildings,
             'build': self.cmd_build,
+            'cities': self.cmd_cities,
+            'switch': self.cmd_switch_city,
+            'found': self.cmd_found_city,
             'status': self.cmd_status,
             'save': self.cmd_save,
             'quit': self.cmd_quit,
@@ -66,22 +69,36 @@ class GameREPL:
         print("=" * 60)
         print("HISTORY IDLE")
         print("=" * 60)
+
+        # Get active city
+        active_city = self.civilization.get_active_city()
+        city_name = active_city.name if active_city else "None"
+        num_cities = len(self.civilization.cities)
+        city_display = f"{city_name} ({num_cities} {'city' if num_cities == 1 else 'cities'})"
+
         print(f"Civilization: {self.civilization.name} | Era: {self.civilization.current_era.value.title()}")
+        print(f"City: {city_display} | Settlers Ready: {self.civilization.ready_settlers}")
+
+        if not active_city:
+            print("No active city!")
+            return
 
         # Population summary
-        pop = self.civilization.population
+        pop = active_city.population
         print(f"Population: {pop.total} (Idle: {pop.idle_workers}, Working: {pop.allocated_workers})")
 
-        # Key resources summary (food, research, production rate)
-        total_food = self.civilization.get_total_food_from_crops()
-        food_rate = sum(r.net_rate for r in self.civilization.resources.resources.values()
+        # Key resources summary (food, research, production rate) - city resources
+        total_food = active_city.get_total_food_from_crops()
+        food_rate = sum(r.net_rate for r in active_city.resources.resources.values()
                        if hasattr(r.resource_type, 'bonus_class') and r.resource_type.bonus_class == 'crop')
 
+        # Research is civilization-wide
         research_res = self.civilization.resources.get("research")
         research_str = f"{research_res.amount:.1f}" if research_res else "0.0"
         research_rate_str = f"{research_res.net_rate:+.1f}/s" if research_res and research_res.net_rate != 0 else ""
 
-        production_res = self.civilization.resources.get("production")
+        # Production is per-city
+        production_res = active_city.resources.get("production")
         production_rate_str = f"{production_res.production_rate:.1f}/s" if production_res and production_res.production_rate > 0 else "0.0/s"
 
         print(f"Food: {total_food:.1f} [{food_rate:+.1f}/s] | Research: {research_str} {research_rate_str} | Production: {production_rate_str}")
@@ -252,6 +269,11 @@ class GameREPL:
         print("  buildings                - List available buildings")
         print("  build <building_id>      - Start constructing a building")
 
+        print("\nCities:")
+        print("  cities                   - List all cities")
+        print("  switch <city_name>       - Switch to a different city")
+        print("  found <city_name>        - Found a new city (requires settler)")
+
     def cmd_status(self, args):
         """Display overall status."""
         print("\n=== Civilization Status ===")
@@ -259,37 +281,65 @@ class GameREPL:
         print(f"Era: {self.civilization.current_era.value.title()}")
         print(f"Government: {self.civilization.government.value.title()}")
         print(f"Game Time: {self.civilization.game_time:.1f}s")
-        print(f"\nPopulation: {self.civilization.population.total}")
-        print(f"Happiness: {self.civilization.population.happiness:.2f}")
-        print(f"Literacy: {self.civilization.population.literacy:.2%}")
+
+        # Show totals across all cities
+        total_pop = self.civilization.get_total_population()
+        print(f"\nTotal Population: {total_pop} across {len(self.civilization.cities)} cities")
+
+        active_city = self.civilization.get_active_city()
+        if active_city:
+            print(f"Active City: {active_city.name}")
+            print(f"  Population: {active_city.population.total}")
+            print(f"  Happiness: {active_city.population.happiness:.2f}")
+            print(f"  Literacy: {active_city.population.literacy:.2%}")
+            print(f"  Buildings: {len(active_city.buildings.buildings)}")
+
         print(f"\nTechnologies: {len(self.civilization.tech_tree.researched)}")
-        print(f"Buildings: {len(self.civilization.buildings.buildings)}")
+        print(f"Settlers Ready: {self.civilization.ready_settlers}")
         print(f"Prestige Points: {self.civilization.prestige_points}")
 
     def cmd_resources(self, args):
         """Display current resources."""
-        print("\n=== Resources ===")
-
-        if not self.civilization.resources.resources:
-            print("No resources available.")
+        active_city = self.civilization.get_active_city()
+        if not active_city:
+            print("No active city!")
             return
 
-        for res_id, resource in sorted(self.civilization.resources.resources.items()):
-            # Calculate time to full/empty
-            status = ""
-            remaining_to_cap = resource.capacity - resource.amount
-            if resource.net_rate > 0 and not resource.is_full:
-                time_to_full = remaining_to_cap / resource.net_rate
-                status = f" (Full in {self._format_time(time_to_full)})"
-            elif resource.net_rate < 0 and not resource.is_empty:
-                time_to_empty = resource.amount / abs(resource.net_rate)
-                status = f" (Empty in {self._format_time(time_to_empty)})"
+        print(f"\n=== Resources ({active_city.name}) ===")
 
-            rate_str = ""
-            if resource.net_rate != 0:
-                rate_str = f" [{resource.net_rate:+.2f}/s]"
+        # Show city resources
+        has_resources = False
+        if active_city.resources.resources:
+            has_resources = True
+            for res_id, resource in sorted(active_city.resources.resources.items()):
+                # Calculate time to full/empty
+                status = ""
+                remaining_to_cap = resource.capacity - resource.amount
+                if resource.net_rate > 0 and not resource.is_full:
+                    time_to_full = remaining_to_cap / resource.net_rate
+                    status = f" (Full in {self._format_time(time_to_full)})"
+                elif resource.net_rate < 0 and not resource.is_empty:
+                    time_to_empty = resource.amount / abs(resource.net_rate)
+                    status = f" (Empty in {self._format_time(time_to_empty)})"
 
-            print(f"  {resource.resource_type.name:20} {resource.amount:8.1f}/{resource.capacity:.1f}{rate_str}{status}")
+                rate_str = ""
+                if resource.net_rate != 0:
+                    rate_str = f" [{resource.net_rate:+.2f}/s]"
+
+                print(f"  {resource.resource_type.name:20} {resource.amount:8.1f}/{resource.capacity:.1f}{rate_str}{status}")
+
+        # Show civilization-wide resources (research)
+        print("\n=== Civilization Resources ===")
+        if self.civilization.resources.resources:
+            has_resources = True
+            for res_id, resource in sorted(self.civilization.resources.resources.items()):
+                rate_str = ""
+                if resource.net_rate != 0:
+                    rate_str = f" [{resource.net_rate:+.2f}/s]"
+                print(f"  {resource.resource_type.name:20} {resource.amount:8.1f}/{resource.capacity:.1f}{rate_str}")
+
+        if not has_resources:
+            print("No resources available.")
 
     def cmd_available_resources(self, args):
         """Display all extractable resources available based on researched technologies."""
@@ -405,9 +455,15 @@ class GameREPL:
                 print("Use 'available_resources' to see available resources")
                 return
 
-            # Check if resource is available to this civilization
-            if resource.id not in self.civilization.available_resources:
-                print(f"Resource '{resource.name}' is not available in your territory.")
+            # Get active city
+            active_city = self.civilization.get_active_city()
+            if not active_city:
+                print("No active city!")
+                return
+
+            # Check if resource is available to this city
+            if resource.id not in active_city.available_resources:
+                print(f"Resource '{resource.name}' is not available in this city.")
                 return
 
             # Check if tech requirement is met
@@ -417,9 +473,9 @@ class GameREPL:
                 print(f"Resource '{resource.name}' requires technology: {tech_name}")
                 return
 
-            # Add resource to civilization's storage if not already there
-            if self.civilization.resources.get(resource.id) is None:
-                self.civilization.resources.add_resource_type(resource, initial_amount=0.0)
+            # Add resource to city's storage if not already there
+            if active_city.resources.get(resource.id) is None:
+                active_city.resources.add_resource_type(resource, initial_amount=0.0)
 
             # Allocate workers to this resource
             allocated = self.civilization.population.allocate_workers(
@@ -617,6 +673,80 @@ class GameREPL:
         else:
             print("Failed to start construction.")
 
+    def cmd_cities(self, args):
+        """List all cities."""
+        print("\n=== Cities ===")
+
+        if not self.civilization.cities:
+            print("No cities exist!")
+            return
+
+        active_city = self.civilization.get_active_city()
+        for city in self.civilization.cities:
+            is_active = "*" if city == active_city else " "
+            pop = city.population.total
+            buildings = len(city.buildings.buildings)
+            resources = len(city.available_resources)
+            print(f"{is_active} {city.name:15} Pop: {pop:3} | Buildings: {buildings:2} | Resources: {resources:2}")
+
+        print(f"\nTotal cities: {len(self.civilization.cities)}")
+        print(f"Settlers ready: {self.civilization.ready_settlers}")
+
+    def cmd_switch_city(self, args):
+        """Switch to a different city."""
+        if len(args) < 1:
+            print("Usage: switch <city_name>")
+            return
+
+        city_name = " ".join(args)
+        city = self.civilization.get_city_by_name(city_name)
+
+        if not city:
+            print(f"City '{city_name}' not found.")
+            print("\nAvailable cities:")
+            for c in self.civilization.cities:
+                print(f"  - {c.name}")
+            return
+
+        if self.civilization.set_active_city(city.id):
+            print(f"Switched to {city.name}")
+        else:
+            print(f"Failed to switch to {city.name}")
+
+    def cmd_found_city(self, args):
+        """Found a new city using a settler."""
+        if len(args) < 1:
+            print("Usage: found <city_name>")
+            return
+
+        if self.civilization.ready_settlers <= 0:
+            print("No settlers available!")
+            print("Build a Settler (requires Tribalism technology) to found new cities.")
+            return
+
+        city_name = " ".join(args)
+
+        # Check if city name already exists
+        if self.civilization.get_city_by_name(city_name):
+            print(f"A city named '{city_name}' already exists!")
+            return
+
+        # Found the city
+        if self.game_data is None:
+            print("Game data not available.")
+            return
+
+        new_city = self.civilization.found_city(city_name, self.game_data.resources)
+
+        if new_city:
+            print(f"🏙️  Founded {city_name}!")
+            print(f"  Starting population: {new_city.population.total}")
+            print(f"  Starting resources: {len(new_city.available_resources)}")
+            print(f"  Settlers remaining: {self.civilization.ready_settlers}")
+            print(f"\nUse 'switch {city_name}' to manage the new city.")
+        else:
+            print("Failed to found city.")
+
     def cmd_save(self, args):
         """Save the game."""
         if self.save_system.save_game(self.civilization, "autosave"):
@@ -643,10 +773,16 @@ class GameREPL:
 
     def _print_debug_state(self):
         """Print current debug state information."""
-        print("\n=== Debug State ===")
+        active_city = self.civilization.get_active_city()
+        if not active_city:
+            print("\n=== Debug State ===")
+            print("No active city!")
+            return
+
+        print(f"\n=== Debug State ({active_city.name}) ===")
 
         # Population info
-        pop = self.civilization.population
+        pop = active_city.population
         print(f"Population: {pop.total}")
         print(f"Happiness: {pop.happiness:.2f}")
         print(f"Literacy: {pop.literacy:.2%}")
@@ -661,16 +797,18 @@ class GameREPL:
         # Calculate expected production rates
         print("\nExpected Production Rates:")
 
-        food_workers = pop.get_workers_on_resource("food")
-        if food_workers > 0:
-            food_production_rate = food_workers * 2.0 * pop.happiness
-            print(f"  Food production: {food_production_rate:.2f}/s ({food_workers} workers × 2.0 × {pop.happiness:.2f} happiness)")
+        # Check for crop workers (not generic "food")
+        total_crop_workers = sum(1 for alloc in pop.allocations
+                                 if alloc.task == WorkforceTask.RESOURCE_EXTRACTION
+                                 and alloc.resource_id)
+        if total_crop_workers > 0:
+            food_production_rate = total_crop_workers * 2.0 * pop.happiness
+            print(f"  Crop production: {food_production_rate:.2f}/s ({total_crop_workers} workers × 2.0 × {pop.happiness:.2f} happiness)")
         else:
-            print(f"  Food production: 0.00/s (no workers)")
+            print(f"  Crop production: 0.00/s (no workers)")
 
         food_consumption_rate = pop.calculate_food_consumption()
         print(f"  Food consumption: {food_consumption_rate:.2f}/s ({pop.total} pop × {pop.food_consumption_per_capita:.2f})")
-        print(f"  Food net rate: {food_production_rate - food_consumption_rate if food_workers > 0 else -food_consumption_rate:.2f}/s")
 
         research_workers = pop.get_workers_on_task(WorkforceTask.RESEARCH)
         if research_workers > 0:
@@ -679,11 +817,17 @@ class GameREPL:
         else:
             print(f"  Research production: 0.00/s (no workers)")
 
-        # Current resource state
-        print("\nCurrent Resources:")
-        for res_id, resource in self.civilization.resources.resources.items():
+        # Current resource state (city resources)
+        print(f"\nCurrent City Resources:")
+        for res_id, resource in active_city.resources.resources.items():
             print(f"  {resource.resource_type.name}: {resource.amount:.2f}/{resource.capacity:.2f}")
             print(f"    Production: {resource.production_rate:.2f}/s, Consumption: {resource.consumption_rate:.2f}/s, Net: {resource.net_rate:.2f}/s")
+
+        # Civilization resources
+        print(f"\nCivilization Resources:")
+        for res_id, resource in self.civilization.resources.resources.items():
+            print(f"  {resource.resource_type.name}: {resource.amount:.2f}/{resource.capacity:.2f}")
+            print(f"    Rate: {resource.production_rate:.2f}/s")
 
     def _check_resource_notifications(self):
         """Check for resource state changes and notify user."""

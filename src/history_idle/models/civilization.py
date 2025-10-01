@@ -4,11 +4,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 import time
+import uuid
 
 from .resource import ResourceStorage, ResourceType, ResourceCategory
 from .technology import TechTree, Era
-from .building import BuildingManager
-from .population import Population, WorkforceTask
+from .city import City
+from .population import WorkforceTask
 
 
 class GovernmentType(Enum):
@@ -71,14 +72,14 @@ class Civilization:
     current_era: Era = Era.PALEOLITHIC
     government: GovernmentType = GovernmentType.TRIBAL
 
-    # Core systems
-    resources: ResourceStorage = field(default_factory=ResourceStorage)
-    population: Population = field(default_factory=Population)
+    # Civilization-wide systems
     tech_tree: TechTree = field(default_factory=TechTree)
-    buildings: BuildingManager = field(default_factory=BuildingManager)
+    resources: ResourceStorage = field(default_factory=ResourceStorage)  # Civilization-wide abstract resources (research)
 
-    # Available resources for extraction (resource IDs)
-    available_resources: set[str] = field(default_factory=set)
+    # Cities
+    cities: list[City] = field(default_factory=list)
+    active_city_id: Optional[str] = None
+    ready_settlers: int = 0  # Number of settlers ready to found cities
 
     # Game time tracking
     game_time: float = 0.0  # Total game time in seconds
@@ -88,13 +89,125 @@ class Civilization:
     prestige_points: int = 0
     prestige_count: int = 0
 
-    def initialize_starting_resources(self) -> None:
-        """Set up initial resources for a new game."""
-        # Note: Food is now tracked via individual crop resources, not a generic "food" resource
-        # Players allocate workers to specific crops (e.g., wheat, barley)
-        # Total food = sum of all crop resources
+    def __post_init__(self):
+        """Initialize with a starting city if no cities exist."""
+        if not self.cities:
+            self.add_city("Capital", starting_city=True)
 
-        # Add basic research points
+    def add_city(self, name: str, starting_city: bool = False, starting_population: int = 10,
+                 starting_resource_count: int = 3) -> City:
+        """Add a new city to the civilization.
+
+        Args:
+            name: Name of the city
+            starting_city: Whether this is the starting capital city
+            starting_population: Initial population
+            starting_resource_count: Number of starting resources (1-3)
+
+        Returns:
+            The newly created City
+        """
+        city_id = str(uuid.uuid4())
+        city = City(
+            id=city_id,
+            name=name,
+        )
+        city.population.total = starting_population
+        city.population.housing_capacity = starting_population
+
+        self.cities.append(city)
+
+        # Set as active if it's the first city
+        if self.active_city_id is None:
+            self.active_city_id = city_id
+
+        return city
+
+    def found_city(self, name: str, all_resources: dict) -> Optional[City]:
+        """Found a new city using a ready settler.
+
+        Args:
+            name: Name for the new city
+            all_resources: Dictionary of all available resources for initialization
+
+        Returns:
+            The newly founded City, or None if no settlers available
+        """
+        if self.ready_settlers <= 0:
+            return None
+
+        # Create the city with reduced starting population (settlers left the original city)
+        import random
+        starting_pop = random.randint(1, 3)
+        resource_count = random.randint(1, 3)
+
+        city = self.add_city(name, starting_city=False, starting_population=starting_pop,
+                            starting_resource_count=resource_count)
+
+        # Initialize resources for the new city
+        city.initialize_starting_resources(all_resources, count=resource_count)
+
+        # Load building definitions into the new city
+        # (We need to copy building definitions from another city or the game data manager)
+        if self.cities and len(self.cities) > 1:
+            # Copy building definitions from the first city
+            source_city = self.cities[0]
+            for building_id, building_def in source_city.buildings.building_definitions.items():
+                city.buildings.add_building_definition(building_def)
+
+        # Consume the settler
+        self.ready_settlers -= 1
+
+        return city
+
+    def get_city(self, city_id: str) -> Optional[City]:
+        """Get a city by its ID."""
+        for city in self.cities:
+            if city.id == city_id:
+                return city
+        return None
+
+    def get_city_by_name(self, name: str) -> Optional[City]:
+        """Get a city by its name."""
+        for city in self.cities:
+            if city.name.lower() == name.lower():
+                return city
+        return None
+
+    def get_active_city(self) -> Optional[City]:
+        """Get the currently active city."""
+        if self.active_city_id is None and self.cities:
+            self.active_city_id = self.cities[0].id
+        return self.get_city(self.active_city_id) if self.active_city_id else None
+
+    def set_active_city(self, city_id: str) -> bool:
+        """Set the active city. Returns True if successful."""
+        if self.get_city(city_id) is not None:
+            self.active_city_id = city_id
+            return True
+        return False
+
+    def remove_city(self, city_id: str) -> bool:
+        """Remove a city. Returns True if successful."""
+        city = self.get_city(city_id)
+        if city is None:
+            return False
+
+        self.cities.remove(city)
+
+        # Update active city if needed
+        if self.active_city_id == city_id:
+            self.active_city_id = self.cities[0].id if self.cities else None
+
+        return True
+
+    def get_total_population(self) -> int:
+        """Get total population across all cities."""
+        return sum(city.population.total for city in self.cities)
+
+    def initialize_starting_resources(self) -> None:
+        """Set up initial civilization-wide resources."""
+        # Add basic research points (civilization-wide)
         research_type = ResourceType(
             id="research",
             name="Research Points",
@@ -103,17 +216,6 @@ class Civilization:
             base_storage_cap=1000.0
         )
         self.resources.add_resource_type(research_type, initial_amount=0.0)
-
-        # Add production resource (capacity 0 - can't stockpile, only applies when building)
-        production_type = ResourceType(
-            id="production",
-            name="Production",
-            category=ResourceCategory.ABSTRACT,
-            description="Work directed towards construction",
-            base_storage_cap=0.0,  # Can't store production
-            can_store=False
-        )
-        self.resources.add_resource_type(production_type, initial_amount=0.0)
 
     def load_tech_tree(self, technologies: dict):
         """Load technology definitions into the tech tree.
@@ -125,73 +227,24 @@ class Civilization:
             self.tech_tree.add_technology(tech_def)
 
     def load_buildings(self, buildings: dict):
-        """Load building definitions into the building manager.
+        """Load building definitions into all city building managers.
 
         Args:
             buildings: Dictionary of building_id -> BuildingDefinition
         """
-        for building_id, building_def in buildings.items():
-            self.buildings.add_building_definition(building_def)
+        for city in self.cities:
+            for building_id, building_def in buildings.items():
+                city.buildings.add_building_definition(building_def)
 
     def initialize_available_resources(self, all_resources: dict):
-        """Randomly select 3 starting resources for the civilization.
-
-        Selects:
-        - 1 PRODUCTION resource
-        - 1 CROP resource (must require 'scavenging' or 'gathering' tech)
-        - 1 random resource (any type)
+        """Initialize starting resources for the capital city.
 
         Args:
             all_resources: Dictionary of resource_id -> ResourceType
         """
-        import random
-
-        # Filter resources by bonus class
-        production_resources = [r for r in all_resources.values() if r.bonus_class == 'production']
-
-        # Filter crop resources to only those requiring scavenging or gathering
-        crop_resources = [
-            r for r in all_resources.values()
-            if r.bonus_class == 'crop'
-            and (r.tech_reveal == 'scavenging' or r.tech_reveal == 'gathering')
-        ]
-
-        # Select one from each category
-        selected = []
-
-        if production_resources:
-            selected.append(random.choice(production_resources))
-
-        if crop_resources:
-            selected.append(random.choice(crop_resources))
-
-        # Select one random resource from all available
-        if all_resources:
-            random_resource = random.choice(list(all_resources.values()))
-            # Make sure it's not already selected
-            if random_resource not in selected:
-                selected.append(random_resource)
-            else:
-                # Try to find a different one
-                other_resources = [r for r in all_resources.values() if r not in selected]
-                if other_resources:
-                    selected.append(random.choice(other_resources))
-
-        # Add to available resources
-        for resource in selected:
-            self.available_resources.add(resource.id)
-
-    def get_total_food_from_crops(self) -> float:
-        """Calculate total food from all crop resources.
-
-        Returns:
-            Total amount of food from all resources with bonus_class='crop'
-        """
-        total = 0.0
-        for resource_qty in self.resources.resources.values():
-            if hasattr(resource_qty.resource_type, 'bonus_class') and resource_qty.resource_type.bonus_class == 'crop':
-                total += resource_qty.amount
-        return total
+        capital = self.get_active_city()
+        if capital:
+            capital.initialize_starting_resources(all_resources, count=3)
 
     def get_time_since_last_update(self) -> float:
         """Calculate time elapsed since last update."""
@@ -214,82 +267,66 @@ class Civilization:
         update_summary = {
             "delta_time": delta_time,
             "completed_techs": [],
-            "completed_buildings": [],
-            "population_change": 0,
-            "resource_changes": {}
+            "cities": {},
+            "total_population": 0,
+            "total_population_change": 0,
         }
 
-        # Calculate and apply crop resource production from workers
-        # Each crop resource with allocated workers produces crops
-        total_crop_production = 0.0
-        for resource_qty in self.resources.resources.values():
-            if hasattr(resource_qty.resource_type, 'bonus_class') and resource_qty.resource_type.bonus_class == 'crop':
-                crop_workers = self.population.get_workers_on_resource(resource_qty.resource_type.id)
-                if crop_workers > 0:
-                    # Each worker produces 2.0 units per second (enough to feed 2 people at 0.5/s consumption)
-                    crop_production_rate = crop_workers * 2.0 * self.population.happiness
-                    resource_qty.production_rate = crop_production_rate
-                    crop_production = crop_production_rate * delta_time
-                    added = resource_qty.add(crop_production)
-                    total_crop_production += added
-                    update_summary["resource_changes"][resource_qty.resource_type.id] = added
+        # Update all cities
+        total_research_output = 0.0
+        settlers_completed = 0
+        for city in self.cities:
+            city_summary = city.update(delta_time)
+            update_summary["cities"][city.id] = city_summary
+            update_summary["total_population"] += city.population.total
+            update_summary["total_population_change"] += city_summary.get("population_change", 0)
+
+            # Check for completed settlers (handle specially)
+            completed_buildings_to_keep = []
+            for completed_building_name in city_summary.get("completed_buildings", []):
+                # Find the actual building in the city
+                matching_buildings = [b for b in city.buildings.buildings
+                                     if b.definition.name == completed_building_name]
+                if matching_buildings:
+                    building = matching_buildings[-1]  # Get the most recently added
+                    if building.definition.id == "settler":
+                        # Remove from buildings list - it doesn't stay in the city
+                        city.buildings.buildings.remove(building)
+                        settlers_completed += 1
+                    else:
+                        completed_buildings_to_keep.append(completed_building_name)
                 else:
-                    resource_qty.production_rate = 0.0
+                    completed_buildings_to_keep.append(completed_building_name)
 
-        # Update population - consume food from crops
-        total_food = self.get_total_food_from_crops()
-        food_consumption_rate = self.population.calculate_food_consumption()
-        food_consumption = food_consumption_rate * delta_time
-        food_surplus = total_food - food_consumption
+            # Update summary to only show non-settler buildings
+            city_summary["completed_buildings"] = completed_buildings_to_keep
 
-        # Consume crops proportionally from all available crops
-        if total_food > 0 and food_consumption > 0:
-            for resource_qty in self.resources.resources.values():
-                if hasattr(resource_qty.resource_type, 'bonus_class') and resource_qty.resource_type.bonus_class == 'crop':
-                    if resource_qty.amount > 0:
-                        # Consume proportional to this crop's share of total food
-                        proportion = resource_qty.amount / total_food
-                        consumption_from_this_crop = food_consumption * proportion
-                        resource_qty.consumption_rate = consumption_from_this_crop / delta_time if delta_time > 0 else 0
-                        resource_qty.remove(consumption_from_this_crop)
+            # Calculate research contribution from this city
+            research_workers = city.population.get_workers_on_task(WorkforceTask.RESEARCH)
+            city_research = research_workers * 1.0 * (1.0 + city.population.literacy) * delta_time
+            total_research_output += city_research
 
-        population_change = self.population.update_growth(delta_time, food_surplus)
-        self.population.update_happiness()
-        update_summary["population_change"] = population_change
+        # Add completed settlers to ready count
+        if settlers_completed > 0:
+            self.ready_settlers += settlers_completed
+            update_summary["settlers_completed"] = settlers_completed
 
-        # Update research
-        research_output = self.population.calculate_research_output() * delta_time
+        # Update civilization-wide research
         research_resource = self.resources.get("research")
         if research_resource:
-            research_workers = self.population.get_workers_on_task(WorkforceTask.RESEARCH)
-            research_resource.production_rate = research_workers * 1.0 * (1.0 + self.population.literacy)
-            research_resource.add(research_output)
+            # Calculate total research rate for display
+            total_research_workers = sum(city.population.get_workers_on_task(WorkforceTask.RESEARCH)
+                                        for city in self.cities)
+            avg_literacy = sum(city.population.literacy for city in self.cities) / len(self.cities) if self.cities else 0
+            research_resource.production_rate = total_research_workers * 1.0 * (1.0 + avg_literacy)
+            research_resource.add(total_research_output)
 
+        # Update tech tree
         if self.tech_tree.current_research:
-            completed_tech = self.tech_tree.add_research_points(research_output)
+            completed_tech = self.tech_tree.add_research_points(total_research_output)
             if completed_tech:
                 update_summary["completed_techs"].append(completed_tech.name)
                 self._apply_tech_effects(completed_tech.id)
-
-        # Update production (workers apply production directly to construction)
-        production_workers = self.population.get_workers_on_task(WorkforceTask.CONSTRUCTION)
-        production_resource = self.resources.get("production")
-        if production_resource:
-            # Production rate shown in UI, but not accumulated
-            production_resource.production_rate = production_workers * 1.0
-            production_resource.amount = 0.0  # Always 0, can't stockpile
-
-        # Calculate production for this tick: workers * rate * time
-        production_this_tick = production_workers * 1.0 * delta_time
-
-        # Update building construction (apply production to buildings under construction)
-        completed_buildings = self.buildings.update_construction(production_this_tick)
-        for building in completed_buildings:
-            update_summary["completed_buildings"].append(building.definition.name)
-            self._apply_building_effects(building)
-
-        # Update housing capacity from buildings
-        self._update_housing_capacity()
 
         return update_summary
 
@@ -299,43 +336,16 @@ class Civilization:
         if not tech:
             return
 
-        # Apply any direct effects from the technology
-        for effect_key, value in tech.effects.items():
-            if effect_key == "literacy_bonus":
-                self.population.literacy += value
-            elif effect_key == "housing_capacity":
-                self.population.housing_capacity += int(value)
-
-    def _apply_building_effects(self, building) -> None:
-        """Apply effects when a building is completed."""
-        # Buildings apply their effects through the building manager
-        pass
-
-    def _update_housing_capacity(self) -> None:
-        """Update housing capacity based on buildings."""
-        base_capacity = 10
-        building_bonus = self.buildings.get_total_effect("housing")
-        self.population.housing_capacity = base_capacity + int(building_bonus)
-
-    def can_afford_costs(self, costs: list) -> bool:
-        """Check if civilization can afford a list of resource costs."""
-        for cost in costs:
-            if not self.resources.has_resource(cost.resource_id, cost.amount):
-                return False
-        return True
-
-    def spend_costs(self, costs: list) -> bool:
-        """Spend resources for costs. Returns True if successful."""
-        if not self.can_afford_costs(costs):
-            return False
-
-        for cost in costs:
-            self.resources.remove_amount(cost.resource_id, cost.amount)
-        return True
+        # Apply any direct effects from the technology to all cities
+        for city in self.cities:
+            for effect_key, value in tech.effects.items():
+                if effect_key == "literacy_bonus":
+                    city.population.literacy += value
+                elif effect_key == "housing_capacity":
+                    city.population.housing_capacity += int(value)
 
     def get_current_era(self) -> Era:
         """Get the current era based on researched technologies."""
-        # Simple implementation - can be enhanced
         return self.current_era
 
     def advance_era(self) -> None:
@@ -344,3 +354,37 @@ class Civilization:
         current_index = eras.index(self.current_era)
         if current_index < len(eras) - 1:
             self.current_era = eras[current_index + 1]
+
+    # Convenience methods that delegate to active city
+    @property
+    def population(self):
+        """Get population of active city (for backwards compatibility)."""
+        city = self.get_active_city()
+        return city.population if city else None
+
+    @property
+    def buildings(self):
+        """Get buildings of active city (for backwards compatibility)."""
+        city = self.get_active_city()
+        return city.buildings if city else None
+
+    @property
+    def available_resources(self):
+        """Get available resources of active city (for backwards compatibility)."""
+        city = self.get_active_city()
+        return city.available_resources if city else set()
+
+    def get_total_food_from_crops(self) -> float:
+        """Get total food from crops in active city (for backwards compatibility)."""
+        city = self.get_active_city()
+        return city.get_total_food_from_crops() if city else 0.0
+
+    def can_afford_costs(self, costs: list) -> bool:
+        """Check if active city can afford costs (for backwards compatibility)."""
+        city = self.get_active_city()
+        return city.can_afford_costs(costs) if city else False
+
+    def spend_costs(self, costs: list) -> bool:
+        """Spend costs from active city (for backwards compatibility)."""
+        city = self.get_active_city()
+        return city.spend_costs(costs) if city else False

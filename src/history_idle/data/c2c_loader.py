@@ -46,6 +46,13 @@ class C2CDataLoader:
             f"{self.BASE_URL}/Buildings/Regular_CIV4BuildingInfos.xml"
         )
 
+    def get_civilization_xml(self) -> str:
+        """Get the civilization XML file content."""
+        return self._get_cached_file(
+            "Civilizations/CIV4CivilizationInfos.xml",
+            f"{self.BASE_URL}/Civilizations/CIV4CivilizationInfos.xml"
+        )
+
     def _get_cached_file(self, relative_path: str, url: str) -> str:
         """Get file content from local data, cache, or download if not available."""
         local_path = self.local_data_dir / relative_path.replace('/', '_')

@@ -4,7 +4,9 @@ from .resource import ResourceType, ResourceQuantity, ResourceStorage, ResourceC
 from .technology import TechnologyDefinition, TechnologyProgress, TechTree, TechCategory, Era
 from .building import BuildingDefinition, Building, BuildingConstruction, BuildingManager, BuildingCategory, ResourceCost
 from .population import Population, WorkforceAllocation, WorkforceTask
+from .city import City
 from .civilization import Civilization, GovernmentType, StartingLocation
+from .civilization_definition import CivilizationDefinition
 
 __all__ = [
     # Resource
@@ -29,8 +31,11 @@ __all__ = [
     "Population",
     "WorkforceAllocation",
     "WorkforceTask",
+    # City
+    "City",
     # Civilization
     "Civilization",
     "GovernmentType",
     "StartingLocation",
+    "CivilizationDefinition",
 ]

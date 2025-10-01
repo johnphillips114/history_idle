@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .c2c_loader import C2CDataLoader
 from .c2c_parser import C2CDataParser
-from ..models import TechnologyDefinition, ResourceType, BuildingDefinition
+from ..models import TechnologyDefinition, ResourceType, BuildingDefinition, BuildingCategory, ResourceCost, CivilizationDefinition
 
 
 class GameDataManager:
@@ -18,6 +18,7 @@ class GameDataManager:
         self.technologies: dict[str, TechnologyDefinition] = {}
         self.resources: dict[str, ResourceType] = {}
         self.buildings: dict[str, BuildingDefinition] = {}
+        self.civilizations: dict[str, CivilizationDefinition] = {}
 
         self._loaded = False
 
@@ -30,6 +31,10 @@ class GameDataManager:
         print(f"Loaded {len(self.resources)} resources")
         self.load_buildings()
         print(f"Loaded {len(self.buildings)} buildings")
+        self.add_custom_buildings()
+        print(f"Total buildings with custom: {len(self.buildings)}")
+        self.load_civilizations()
+        print(f"Loaded {len(self.civilizations)} civilizations")
 
     def load_technologies(self):
         """Load technology tree from C2C data."""
@@ -72,3 +77,48 @@ class GameDataManager:
     def get_building(self, building_id: str) -> Optional[BuildingDefinition]:
         """Get a building by ID."""
         return self.buildings.get(building_id)
+
+    def load_civilizations(self):
+        """Load civilizations from C2C data."""
+        xml_content = self.loader.get_civilization_xml()
+        civ_list = self.parser.parse_civilizations_xml(xml_content)
+
+        for civ in civ_list:
+            self.civilizations[civ.id] = civ
+
+    def get_civilization(self, civ_id: str) -> Optional[CivilizationDefinition]:
+        """Get a civilization by ID."""
+        return self.civilizations.get(civ_id)
+
+    def get_random_civilization(self) -> Optional[CivilizationDefinition]:
+        """Get a random civilization from the loaded civilizations."""
+        import random
+        if self.civilizations:
+            return random.choice(list(self.civilizations.values()))
+        return None
+
+    def add_custom_buildings(self):
+        """Add custom buildings not in C2C data."""
+        # Settler building - used to found new cities
+        settler = BuildingDefinition(
+            id="settler",
+            name="Settler",
+            description="Train a group of settlers to found a new city. Requires population to construct.",
+            category=BuildingCategory.INFRASTRUCTURE,
+            construction_costs=[
+                ResourceCost(resource_id="production", amount=100.0),
+            ],
+            construction_time=0.0,
+            required_tech="tribalism",  # Note: C2C parser converts TECH_TRIBALISM to tribalism
+            max_count=-1,  # Can build multiple
+            effects={"special": 1.0}  # Special marker to indicate this triggers city founding
+        )
+        self.buildings["settler"] = settler
+
+    def register_building(self, building: BuildingDefinition):
+        """Register a custom building definition.
+
+        Args:
+            building: BuildingDefinition to register
+        """
+        self.buildings[building.id] = building

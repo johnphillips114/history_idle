@@ -135,12 +135,20 @@ class SaveSystem:
             'game_time': civ.game_time,
             'prestige_points': civ.prestige_points,
             'prestige_count': civ.prestige_count,
-            'available_resources': list(civ.available_resources),
 
+            # Civilization-wide resources (research)
             'resources': self._serialize_resources(civ.resources),
-            'population': self._serialize_population(civ.population),
             'tech_tree': self._serialize_tech_tree(civ.tech_tree),
-            'buildings': self._serialize_buildings(civ.buildings),
+
+            # Multi-city data
+            'cities': self._serialize_cities(civ.cities),
+            'active_city_id': civ.active_city_id,
+            'ready_settlers': civ.ready_settlers,
+
+            # Legacy fields for backward compatibility (delegate to active city)
+            'available_resources': list(civ.available_resources) if civ.get_active_city() else [],
+            'population': self._serialize_population(civ.population) if civ.get_active_city() else {},
+            'buildings': self._serialize_buildings(civ.buildings) if civ.get_active_city() else {},
         }
 
     def _serialize_resources(self, resources) -> dict:
@@ -220,25 +228,46 @@ class SaveSystem:
             'construction_queue': buildings.construction_queue
         }
 
+    def _serialize_cities(self, cities: list) -> list:
+        """Serialize all cities."""
+        return [
+            {
+                'id': city.id,
+                'name': city.name,
+                'resources': self._serialize_resources(city.resources),
+                'population': self._serialize_population(city.population),
+                'buildings': self._serialize_buildings(city.buildings),
+                'available_resources': list(city.available_resources),
+            }
+            for city in cities
+        ]
+
     def _deserialize_civilization(self, data: dict) -> Civilization:
-        """Convert dictionary to Civilization object."""
-        from ..models import Civilization, ResourceStorage, Population, TechTree, BuildingManager
+        """Convert dictionary to Civilization object.
+
+        Supports both old format (single city) and new format (multiple cities).
+        """
+        from ..models import Civilization, ResourceStorage, Population, TechTree, BuildingManager, City
         from ..models.resource import ResourceType, ResourceQuantity, ResourceCategory
         from ..models.population import WorkforceAllocation
 
-        civ = Civilization(
-            name=data['name'],
-            starting_location=StartingLocation(data['starting_location']),
-            current_era=Era(data['current_era']),
-            government=GovernmentType(data['government'])
-        )
-
+        # Create civilization without auto-creating a city
+        civ = Civilization.__new__(Civilization)
+        civ.name = data['name']
+        civ.starting_location = StartingLocation(data['starting_location'])
+        civ.current_era = Era(data['current_era'])
+        civ.government = GovernmentType(data['government'])
+        civ.tech_tree = TechTree()
+        civ.resources = ResourceStorage()
+        civ.cities = []
+        civ.active_city_id = None
+        civ.ready_settlers = data.get('ready_settlers', 0)
         civ.game_time = data['game_time']
         civ.prestige_points = data['prestige_points']
         civ.prestige_count = data['prestige_count']
-        civ.available_resources = set(data.get('available_resources', []))
+        civ.last_update_time = __import__('time').time()
 
-        # Deserialize resources
+        # Deserialize civilization-wide resources
         resources_data = data['resources']['resources']
         for res_id, res_data in resources_data.items():
             rt_data = res_data['resource_type']
@@ -260,41 +289,118 @@ class SaveSystem:
                 resource.production_rate = res_data['production_rate']
                 resource.consumption_rate = res_data['consumption_rate']
 
-        # Deserialize population
-        pop_data = data['population']
-        civ.population.total = pop_data['total']
-        civ.population.growth_rate = pop_data['growth_rate']
-        civ.population.happiness = pop_data['happiness']
-        civ.population.literacy = pop_data['literacy']
-        civ.population.housing_capacity = pop_data['housing_capacity']
-
-        # Fix old saves that had food_consumption_per_capita = 1.0
-        # New default is 0.5 per second
-        if pop_data.get('food_consumption_per_capita', 1.0) == 1.0:
-            civ.population.food_consumption_per_capita = 0.5
-        else:
-            civ.population.food_consumption_per_capita = pop_data['food_consumption_per_capita']
-
-        for alloc_data in pop_data['allocations']:
-            allocation = WorkforceAllocation(
-                task=WorkforceTask(alloc_data['task']),
-                resource_id=alloc_data['resource_id'],
-                building_id=alloc_data['building_id'],
-                count=alloc_data['count']
-            )
-            civ.population.allocations.append(allocation)
-
         # Deserialize tech tree
         tech_data = data['tech_tree']
         civ.tech_tree.researched = set(tech_data['researched'])
         civ.tech_tree.research_queue = tech_data['research_queue']
 
-        # Store buildings and tech tree data for restoration after definitions are loaded
-        # (definitions need to be loaded from game data first)
-        civ._saved_buildings_data = data.get('buildings', {})
+        # Check if this is a new multi-city save or old single-city save
+        if 'cities' in data and data['cities']:
+            # New format: deserialize all cities
+            for city_data in data['cities']:
+                city = self._deserialize_city(city_data)
+                civ.cities.append(city)
+            civ.active_city_id = data.get('active_city_id')
+        else:
+            # Old format: create a single city from legacy data
+            print("Loading old save format - migrating to multi-city...")
+            city = City(id=str(__import__('uuid').uuid4()), name="Capital")
+
+            # Deserialize population from legacy data
+            if 'population' in data:
+                pop_data = data['population']
+                city.population.total = pop_data['total']
+                city.population.growth_rate = pop_data['growth_rate']
+                city.population.happiness = pop_data['happiness']
+                city.population.literacy = pop_data['literacy']
+                city.population.housing_capacity = pop_data['housing_capacity']
+
+                # Fix old saves that had food_consumption_per_capita = 1.0
+                if pop_data.get('food_consumption_per_capita', 1.0) == 1.0:
+                    city.population.food_consumption_per_capita = 0.5
+                else:
+                    city.population.food_consumption_per_capita = pop_data['food_consumption_per_capita']
+
+                for alloc_data in pop_data.get('allocations', []):
+                    allocation = WorkforceAllocation(
+                        task=WorkforceTask(alloc_data['task']),
+                        resource_id=alloc_data['resource_id'],
+                        building_id=alloc_data['building_id'],
+                        count=alloc_data['count']
+                    )
+                    city.population.allocations.append(allocation)
+
+            # Deserialize available resources from legacy data
+            city.available_resources = set(data.get('available_resources', []))
+
+            # Store legacy buildings data for later restoration
+            city._saved_buildings_data = data.get('buildings', {})
+
+            civ.cities.append(city)
+            civ.active_city_id = city.id
+
+        # Store tech tree data for restoration after definitions are loaded
         civ._saved_tech_data = tech_data
 
         return civ
+
+    def _deserialize_city(self, city_data: dict):
+        """Deserialize a single city from save data."""
+        from ..models import City
+        from ..models.resource import ResourceType, ResourceQuantity, ResourceCategory
+        from ..models.population import WorkforceAllocation
+
+        city = City(id=city_data['id'], name=city_data['name'])
+
+        # Deserialize city resources
+        if 'resources' in city_data:
+            resources_data = city_data['resources']['resources']
+            for res_id, res_data in resources_data.items():
+                rt_data = res_data['resource_type']
+                resource_type = ResourceType(
+                    id=rt_data['id'],
+                    name=rt_data['name'],
+                    category=ResourceCategory(rt_data['category']),
+                    description=rt_data['description'],
+                    can_store=rt_data['can_store'],
+                    base_storage_cap=rt_data['base_storage_cap'],
+                    tech_reveal=rt_data.get('tech_reveal'),
+                    bonus_class=rt_data.get('bonus_class')
+                )
+
+                city.resources.add_resource_type(resource_type, initial_amount=res_data['amount'])
+                resource = city.resources.get(res_id)
+                if resource:
+                    resource.capacity = res_data['capacity']
+                    resource.production_rate = res_data['production_rate']
+                    resource.consumption_rate = res_data['consumption_rate']
+
+        # Deserialize population
+        if 'population' in city_data:
+            pop_data = city_data['population']
+            city.population.total = pop_data['total']
+            city.population.growth_rate = pop_data['growth_rate']
+            city.population.happiness = pop_data['happiness']
+            city.population.literacy = pop_data['literacy']
+            city.population.housing_capacity = pop_data['housing_capacity']
+            city.population.food_consumption_per_capita = pop_data.get('food_consumption_per_capita', 0.5)
+
+            for alloc_data in pop_data.get('allocations', []):
+                allocation = WorkforceAllocation(
+                    task=WorkforceTask(alloc_data['task']),
+                    resource_id=alloc_data['resource_id'],
+                    building_id=alloc_data['building_id'],
+                    count=alloc_data['count']
+                )
+                city.population.allocations.append(allocation)
+
+        # Deserialize available resources
+        city.available_resources = set(city_data.get('available_resources', []))
+
+        # Store buildings data for later restoration (after building definitions are loaded)
+        city._saved_buildings_data = city_data.get('buildings', {})
+
+        return city
 
     def restore_from_save_data(self, civilization: Civilization) -> None:
         """Restore buildings and current research from saved data.
@@ -305,51 +411,52 @@ class SaveSystem:
         Args:
             civilization: The civilization to restore
         """
-        # Restore buildings from saved data
-        if hasattr(civilization, '_saved_buildings_data'):
-            buildings_data = civilization._saved_buildings_data
+        # Restore buildings for each city
+        for city in civilization.cities:
+            if hasattr(city, '_saved_buildings_data'):
+                buildings_data = city._saved_buildings_data
 
-            # Restore completed buildings
-            for building_data in buildings_data.get('buildings', []):
-                building_def = civilization.buildings.get_building_definition(building_data['definition_id'])
-                if building_def:
-                    from ..models.building import Building
-                    building = Building(
-                        definition=building_def,
-                        is_active=building_data['is_active'],
-                        assigned_workers=building_data['assigned_workers']
-                    )
-                    civilization.buildings.buildings.append(building)
+                # Restore completed buildings
+                for building_data in buildings_data.get('buildings', []):
+                    building_def = city.buildings.get_building_definition(building_data['definition_id'])
+                    if building_def:
+                        from ..models.building import Building
+                        building = Building(
+                            definition=building_def,
+                            is_active=building_data['is_active'],
+                            assigned_workers=building_data['assigned_workers']
+                        )
+                        city.buildings.buildings.append(building)
 
-            # Restore buildings under construction
-            for construction_data in buildings_data.get('under_construction', []):
-                building_def = civilization.buildings.get_building_definition(construction_data['building_id'])
-                if building_def:
-                    from ..models.building import BuildingConstruction
-                    construction = BuildingConstruction(
-                        building_def=building_def,
-                        progress=construction_data['progress'],
-                        required_production=construction_data['required_production']
-                    )
-                    civilization.buildings.under_construction.append(construction)
+                # Restore buildings under construction
+                for construction_data in buildings_data.get('under_construction', []):
+                    building_def = city.buildings.get_building_definition(construction_data['building_id'])
+                    if building_def:
+                        from ..models.building import BuildingConstruction
+                        construction = BuildingConstruction(
+                            building_def=building_def,
+                            progress=construction_data['progress'],
+                            required_production=construction_data['required_production']
+                        )
+                        city.buildings.under_construction.append(construction)
 
-            # Restore construction queue
-            civilization.buildings.construction_queue = buildings_data.get('construction_queue', [])
+                # Restore construction queue
+                city.buildings.construction_queue = buildings_data.get('construction_queue', [])
 
-            # Clean up temporary data
-            del civilization._saved_buildings_data
+                # Clean up temporary data
+                del city._saved_buildings_data
 
         # Restore current research from saved data
         if hasattr(civilization, '_saved_tech_data'):
             tech_data = civilization._saved_tech_data
 
             if tech_data.get('current_research'):
-                from ..models.technology import ResearchProgress
+                from ..models.technology import TechnologyProgress
                 tech_id = tech_data['current_research']['tech_id']
                 tech_def = civilization.tech_tree.get_technology(tech_id)
 
                 if tech_def:
-                    research = ResearchProgress(
+                    research = TechnologyProgress(
                         tech_def=tech_def,
                         research_points=tech_data['current_research']['research_points']
                     )

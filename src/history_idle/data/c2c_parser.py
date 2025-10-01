@@ -5,7 +5,8 @@ from typing import Optional
 from ..models import (
     ResourceType, ResourceCategory,
     TechnologyDefinition, TechCategory, Era,
-    BuildingDefinition, BuildingCategory, ResourceCost
+    BuildingDefinition, BuildingCategory, ResourceCost,
+    CivilizationDefinition
 )
 
 
@@ -404,3 +405,74 @@ class C2CDataParser:
         }
 
         return era_mapping.get(era_text, Era.PALEOLITHIC)
+
+    @staticmethod
+    def parse_civilizations_xml(xml_content: str) -> list[CivilizationDefinition]:
+        """Parse C2C CivilizationInfos XML to extract civilizations.
+
+        Args:
+            xml_content: XML content as string
+
+        Returns:
+            List of CivilizationDefinition objects
+        """
+        civilizations = []
+
+        try:
+            # Remove namespace to simplify parsing
+            import re
+            xml_content = re.sub(r' xmlns="[^"]+"', '', xml_content)
+            root = ET.fromstring(xml_content)
+
+            # Find all CivilizationInfo elements
+            for civ_info in root.findall('.//CivilizationInfo'):
+                civ_id = None
+                name = None
+                city_names = []
+                leaders = []
+                derivative_civ = ""
+
+                # Extract type (used as ID)
+                type_elem = civ_info.find('Type')
+                if type_elem is not None and type_elem.text:
+                    civ_id = type_elem.text.replace('CIVILIZATION_', '').lower()
+
+                # Extract description (used as name)
+                desc_elem = civ_info.find('Description')
+                if desc_elem is not None and desc_elem.text:
+                    name = desc_elem.text.replace('TXT_KEY_CIVILIZATION_', '').replace('_', ' ').title()
+
+                # Extract city names
+                cities_elem = civ_info.find('Cities')
+                if cities_elem is not None:
+                    for city_elem in cities_elem.findall('City'):
+                        if city_elem.text:
+                            city_names.append(city_elem.text)
+
+                # Extract leaders
+                leaders_elem = civ_info.find('Leaders')
+                if leaders_elem is not None:
+                    for leader_elem in leaders_elem.findall('.//LeaderName'):
+                        if leader_elem.text:
+                            leaders.append(leader_elem.text.replace('LEADER_', '').lower())
+
+                # Extract derivative civilization
+                derivative_elem = civ_info.find('DerivativeCiv')
+                if derivative_elem is not None and derivative_elem.text:
+                    derivative_civ = derivative_elem.text.replace('CIVILIZATION_', '').lower()
+
+                # Create civilization definition if we have required data
+                if civ_id and name:
+                    civilization = CivilizationDefinition(
+                        id=civ_id,
+                        name=name,
+                        city_names=city_names,
+                        leaders=leaders,
+                        derivative_civ=derivative_civ
+                    )
+                    civilizations.append(civilization)
+
+        except Exception as e:
+            print(f"Error parsing civilizations XML: {e}")
+
+        return civilizations

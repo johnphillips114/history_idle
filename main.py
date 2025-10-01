@@ -23,17 +23,36 @@ def main():
 
     if civ is None:
         print("\n=== History Idle - New Game ===\n")
+
+        # Select a random civilization
+        civ_def = game_data.get_random_civilization()
+        if not civ_def:
+            print("ERROR: No civilizations loaded!")
+            return
+
+        print(f"Civilization: {civ_def.name}")
+        first_city_name = civ_def.get_first_city_name()
+        print(f"Starting city: {first_city_name}")
+
         civ = Civilization(
-            name="Test Civilization",
+            name=civ_def.name,
             starting_location=StartingLocation.MESOPOTAMIA
         )
+
+        # Rename the starting city to use the civilization's first city name
+        active_city = civ.get_active_city()
+        if active_city:
+            active_city.name = first_city_name
+
         civ.initialize_starting_resources()
         civ.load_tech_tree(game_data.technologies)
         civ.load_buildings(game_data.buildings)
         civ.initialize_available_resources(game_data.resources)
         print(f"Loaded {len(civ.tech_tree.technologies)} technologies into tech tree")
-        print(f"Loaded {len(civ.buildings.building_definitions)} buildings")
-        print(f"Selected {len(civ.available_resources)} starting resources")
+
+        if active_city:
+            print(f"Loaded {len(active_city.buildings.building_definitions)} buildings")
+            print(f"Selected {len(active_city.available_resources)} starting resources for {active_city.name}")
     else:
         print("\n=== History Idle - Loaded Game ===\n")
         # Load tech tree and buildings definitions for existing save
@@ -43,9 +62,10 @@ def main():
         # Restore buildings and research from save data
         save_system.restore_from_save_data(civ)
 
-        print(f"Restored {len(civ.buildings.buildings)} buildings")
-        if civ.buildings.under_construction:
-            print(f"Restored {len(civ.buildings.under_construction)} buildings under construction")
+        # Show info about restored cities
+        print(f"Restored {len(civ.cities)} cities")
+        for city in civ.cities:
+            print(f"  {city.name}: {city.population.total} population, {len(city.buildings.buildings)} buildings")
         if civ.tech_tree.current_research:
             print(f"Restored current research: {civ.tech_tree.current_research.tech_def.name}")
 
