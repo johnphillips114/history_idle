@@ -10,6 +10,7 @@ from ..models import (
     BuildingCategory,
     ResourceCost,
     CivilizationDefinition,
+    TerrainType,
 )
 
 
@@ -22,6 +23,10 @@ class GameDataManager:
         self.resources: dict[str, ResourceType] = {}
         self.buildings: dict[str, BuildingDefinition] = {}
         self.civilizations: dict[str, CivilizationDefinition] = {}
+        self.terrains: dict[str, TerrainType] = {}
+
+        self.buildings_text: dict[str, str] = {}
+        self.technologies_text: dict[str, str] = {}
 
         self._loaded = False
 
@@ -37,6 +42,10 @@ class GameDataManager:
         print(f"Total buildings with custom: {len(self.buildings)}")
         self.load_civilizations()
         print(f"Loaded {len(self.civilizations)} civilizations")
+        self.load_terrains()
+        print(f"Loaded {len(self.terrains)} terrains")
+        self.load_gametext()
+        print(f"Loaded {len(self.buildings_text)} building texts and {len(self.technologies_text)} technology texts")
 
     def load_technologies(self):
         xml_content = self.loader.get_tech_xml()
@@ -110,3 +119,28 @@ class GameDataManager:
 
     def register_building(self, building: BuildingDefinition):
         self.buildings[building.id] = building
+
+    def load_terrains(self):
+        xml_content = self.loader.get_terrain_xml()
+        terrain_list = self.parser.parse_terrains_xml(xml_content)
+
+        for terrain in terrain_list:
+            self.terrains[terrain.id] = terrain
+
+    def get_terrain(self, terrain_id: str) -> Optional[TerrainType]:
+        return self.terrains.get(terrain_id)
+
+    def get_random_suitable_terrain(self) -> Optional[TerrainType]:
+        import random
+
+        suitable_terrains = [t for t in self.terrains.values() if t.can_found]
+        if suitable_terrains:
+            return random.choice(suitable_terrains)
+        return None
+
+    def load_gametext(self):
+        buildings_xml = self.loader.get_buildings_gametext_xml()
+        self.buildings_text = self.parser.parse_gametext_xml(buildings_xml)
+
+        technologies_xml = self.loader.get_technologies_gametext_xml()
+        self.technologies_text = self.parser.parse_gametext_xml(technologies_xml)

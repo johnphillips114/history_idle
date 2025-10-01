@@ -22,6 +22,7 @@ class ResourceType:
     bonus_class: Optional[str] = (
         None  # C2C bonus class (CROP, PRODUCTION, LUXURY, etc.)
     )
+    compatible_terrains: list[str] = field(default_factory=list)  # Terrain IDs where this resource can appear
 
     def __hash__(self):
         return hash(self.id)

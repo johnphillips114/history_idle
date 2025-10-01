@@ -42,6 +42,8 @@ class BuildingDefinition:
     effects: dict[str, float] = field(default_factory=dict)
     worker_slots: int = 0  # Number of workers this building can employ
     flavors: dict[str, int] = field(default_factory=dict)  # FlavorType -> iFlavor value
+    vicinity_bonus: Optional[str] = None  # Resource that must be in city vicinity (available_resources)
+    prereq_or_terrain: list[str] = field(default_factory=list)  # List of terrain IDs (city must be on one of them)
 
     def __hash__(self):
         return hash(self.id)
@@ -103,6 +105,7 @@ class BuildingManager:
     building_definitions: dict[str, BuildingDefinition] = field(default_factory=dict)
     buildings: list[Building] = field(default_factory=list)
     under_construction: list[BuildingConstruction] = field(default_factory=list)
+    paused_construction: dict[str, BuildingConstruction] = field(default_factory=dict)  # building_id -> construction progress
     construction_queue: list[str] = field(default_factory=list)
 
     def add_building_definition(self, building_def: BuildingDefinition) -> None:
@@ -135,7 +138,13 @@ class BuildingManager:
 
         return adjusted_costs
 
-    def can_build(self, building_id: str, researched_techs: set[str]) -> bool:
+    def can_build(
+        self,
+        building_id: str,
+        researched_techs: set[str],
+        city_terrain: Optional["TerrainType"] = None,
+        city_available_resources: Optional[set[str]] = None
+    ) -> bool:
         building_def = self.get_building_definition(building_id)
         if building_def is None:
             return False
@@ -159,6 +168,20 @@ class BuildingManager:
             if current_count >= building_def.max_count:
                 return False
 
+        # Check vicinity bonus (resource must be in city's available resources)
+        if building_def.vicinity_bonus:
+            if city_available_resources is None:
+                return False
+            if building_def.vicinity_bonus not in city_available_resources:
+                return False
+
+        # Check terrain requirements (city must be on one of the listed terrains)
+        if building_def.prereq_or_terrain:
+            if city_terrain is None:
+                return False
+            if city_terrain.id not in building_def.prereq_or_terrain:
+                return False
+
         return True
 
     def start_construction(self, building_id: str) -> bool:
@@ -166,41 +189,52 @@ class BuildingManager:
         if building_def is None:
             return False
 
-        # Get the required production (from adjusted costs that were already paid)
-        adjusted_costs = self.get_adjusted_costs(building_id)
-        required_production = 0.0
-        for cost in adjusted_costs:
-            if cost.resource_id == "production":
-                required_production = cost.amount
-                break
+        # If something is currently under construction, pause it
+        if self.under_construction:
+            current_construction = self.under_construction[0]
+            current_id = current_construction.building_def.id
+            self.paused_construction[current_id] = current_construction
+            self.under_construction.clear()
 
-        construction = BuildingConstruction(
-            building_def=building_def, required_production=required_production
-        )
-        self.under_construction.append(construction)
+        # Check if this building has saved progress
+        if building_id in self.paused_construction:
+            # Resume from saved progress
+            construction = self.paused_construction.pop(building_id)
+            self.under_construction.append(construction)
+        else:
+            # Start fresh construction
+            # Get the required production (from adjusted costs that were already paid)
+            adjusted_costs = self.get_adjusted_costs(building_id)
+            required_production = 0.0
+            for cost in adjusted_costs:
+                if cost.resource_id == "production":
+                    required_production = cost.amount
+                    break
+
+            construction = BuildingConstruction(
+                building_def=building_def, required_production=required_production
+            )
+            self.under_construction.append(construction)
+
         return True
 
     def update_construction(self, production_amount: float) -> list[Building]:
         completed = []
-        remaining = []
 
-        for construction in self.under_construction:
-            # Apply production to this construction
+        # Only apply production to the first (active) building under construction
+        if self.under_construction:
+            construction = self.under_construction[0]
             if construction.add_progress(production_amount):
                 # Construction complete
                 new_building = Building(definition=construction.building_def)
                 self.buildings.append(new_building)
                 completed.append(new_building)
-            else:
-                remaining.append(construction)
+                self.under_construction.pop(0)
 
-        self.under_construction = remaining
-
-        # Start next in queue if construction slots available
-        while self.construction_queue:
-            next_building_id = self.construction_queue.pop(0)
-            if self.start_construction(next_building_id):
-                break
+                # Start next in queue if available
+                if self.construction_queue:
+                    next_building_id = self.construction_queue.pop(0)
+                    self.start_construction(next_building_id)
 
         return completed
 

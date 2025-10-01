@@ -7,6 +7,8 @@ from .population import Population, WorkforceAllocation, WorkforceTask
 from .city import City
 from .civilization import Civilization, GovernmentType, StartingLocation
 from .civilization_definition import CivilizationDefinition
+from .terrain import TerrainType
+from .tile import Tile, CultureLevel
 
 __all__ = [
     # Resource
@@ -38,4 +40,9 @@ __all__ = [
     "GovernmentType",
     "StartingLocation",
     "CivilizationDefinition",
+    # Terrain
+    "TerrainType",
+    # Tile
+    "Tile",
+    "CultureLevel",
 ]

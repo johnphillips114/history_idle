@@ -4,6 +4,8 @@ import os
 import select
 import tty
 import termios
+from collections import deque
+from io import StringIO
 from ..models import Civilization, WorkforceTask
 from ..systems.game_loop import GameLoop
 from ..utils.save_system import SaveSystem
@@ -29,6 +31,9 @@ class GameREPL:
 
         self.old_terminal_settings = None
 
+        # Message buffer for scrolling notifications/command output
+        self.message_buffer = deque(maxlen=40)  # Keep last 40 messages
+
         self.commands = {
             "help": self.cmd_help,
             "h": self.cmd_help,
@@ -51,6 +56,8 @@ class GameREPL:
             "switch": self.cmd_switch_city,
             "found": self.cmd_found_city,
             "status": self.cmd_status,
+            "describe": self.cmd_describe,
+            "desc": self.cmd_describe,
             "save": self.cmd_save,
             "quit": self.cmd_quit,
             "exit": self.cmd_quit,
@@ -60,6 +67,17 @@ class GameREPL:
 
     def clear_screen(self):
         os.system("clear" if os.name != "nt" else "cls")
+
+    def add_message(self, message: str):
+        """Add a message to the scrolling message buffer."""
+        if message.strip():  # Only add non-empty messages
+            self.message_buffer.append(message)
+
+    def display_messages(self):
+        """Display the most recent message from the buffer."""
+        if self.message_buffer:
+            print()
+            print(self.message_buffer[-1])  # Only show the latest message
 
     def display_status(self):
         print("=" * 60)
@@ -86,16 +104,15 @@ class GameREPL:
 
         pop = active_city.population
         print(
-            f"Population: {pop.total} (Idle: {pop.idle_workers}, Working: {pop.allocated_workers})"
+            f"Population: {pop.total}/{pop.housing_capacity} (Idle: {pop.idle_workers}, Working: {pop.allocated_workers})"
         )
+        print(f"  Growth: {pop.food_for_growth:.1f}/{pop.food_for_growth_capacity:.1f} food")
+        if pop.total >= pop.housing_capacity:
+            print(f"  [!] Housing capacity reached! Build more housing to grow population.")
 
         total_food = active_city.get_total_food_from_crops()
-        food_rate = sum(
-            r.net_rate
-            for r in active_city.resources.resources.values()
-            if hasattr(r.resource_type, "bonus_class")
-            and r.resource_type.bonus_class == "crop"
-        )
+        food_resource = active_city.resources.get("food")
+        food_rate = food_resource.production_rate if food_resource else 0.0
 
         research_res = self.civilization.resources.get("research")
         research_str = f"{research_res.amount:.1f}" if research_res else "0.0"
@@ -131,7 +148,8 @@ class GameREPL:
     def start(self):
         self.clear_screen()
         self.display_status()
-        print("\nType 'help' for available commands.")
+        self.add_message("Type 'help' for available commands.")
+        self.display_messages()
         self.game_loop.start()
 
         if sys.platform != "win32" and sys.stdin.isatty():
@@ -153,33 +171,47 @@ class GameREPL:
                         update = self.game_loop.tick()
                         self.last_display_time = current_time
 
-                        notifications = []
+                        # Add notifications to message buffer
                         if update.get("completed_techs"):
-                            for tech_name in update["completed_techs"]:
-                                notifications.append(
-                                    f"🎓 Technology completed: {tech_name}!"
-                                )
+                            for tech_id in update["completed_techs"]:
+                                tech = self.game_data.technologies.get(tech_id) if self.game_data else None
+                                if tech:
+                                    for msg in self._format_tech_completion(tech):
+                                        self.add_message(msg)
+                                else:
+                                    self.add_message(f"🎓 Technology completed: {tech_id}!")
 
                         if update.get("completed_buildings"):
-                            for building_name in update["completed_buildings"]:
-                                notifications.append(
-                                    f"🏗️  Building completed: {building_name}!"
-                                )
+                            for building_id in update["completed_buildings"]:
+                                building = self.game_data.buildings.get(building_id) if self.game_data else None
+                                if building:
+                                    for msg in self._format_building_completion(building):
+                                        self.add_message(msg)
+                                else:
+                                    self.add_message(f"🏗️  Building completed: {building_id}!")
 
-                        had_notification = self._check_resource_notifications_silent()
+                        # Check for culture level-ups in cities
+                        for city_id, city_summary in update.get("cities", {}).items():
+                            if city_summary.get("culture_level_up"):
+                                city = self.civilization.get_city(city_id)
+                                if city:
+                                    prev_level = city_summary.get("previous_culture_level", "NONE")
+                                    new_level = city_summary.get("new_culture_level", "NONE")
+                                    tiles_count = city_summary.get("new_tiles_count", 0)
+                                    self.add_message(f"🎨 {city.name} reached culture level: {new_level.title()}!")
+                                    if tiles_count > 0:
+                                        self.add_message(f"   Gained {tiles_count} new tiles (Total: {len(city.tiles)})")
 
-                        if notifications or had_notification or self.debug_mode:
-                            self.clear_screen()
-                            self.display_status()
-                            print()
+                        self._check_resource_notifications_silent()
 
-                            for notification in notifications:
-                                print(notification)
+                        if self.debug_mode:
+                            self._print_debug_update(update)
 
-                            if self.debug_mode:
-                                self._print_debug_update(update)
-
-                            print(f"\n> {input_buffer}", end="", flush=True)
+                        # Always redraw the screen on every tick
+                        self.clear_screen()
+                        self.display_status()
+                        self.display_messages()
+                        print(f"\n> {input_buffer}", end="", flush=True)
 
                     if sys.platform != "win32" and self.old_terminal_settings:
                         if select.select([sys.stdin], [], [], 0.1)[0]:
@@ -225,23 +257,37 @@ class GameREPL:
         command = parts[0].lower()
         args = parts[1:]
 
-        self.clear_screen()
-        self.display_status()
-        print()  # Separator line
+        # Capture command output to message buffer
+        old_stdout = sys.stdout
+        sys.stdout = StringIO()
 
-        if command in self.commands:
-            try:
-                self.commands[command](args)
-            except Exception as e:
-                print(f"Error executing command: {e}")
-        else:
-            print(f"Unknown command: {command}. Type 'help' for available commands.")
+        try:
+            if command in self.commands:
+                try:
+                    self.commands[command](args)
+                except Exception as e:
+                    print(f"Error executing command: {e}")
+            else:
+                print(f"Unknown command: {command}. Type 'help' for available commands.")
+        finally:
+            # Get the captured output and add to message buffer
+            output = sys.stdout.getvalue()
+            sys.stdout = old_stdout
+
+            if output.strip():
+                self.add_message(output.rstrip())
+
+            # Immediately redraw to show command results
+            self.clear_screen()
+            self.display_status()
+            self.display_messages()
 
     def cmd_help(self, args):
         print("\n=== Available Commands ===")
         print("\nGeneral:")
         print("  help, h                  - Show this help message")
         print("  status                   - Show overall civilization status")
+        print("  describe, desc <item>    - Show detailed info about a building or technology")
         print("  save                     - Save the game")
         print("  quit, exit, q            - Save and exit the game")
 
@@ -286,6 +332,7 @@ class GameREPL:
         if active_city:
             print(f"Active City: {active_city.name}")
             print(f"  Population: {active_city.population.total}")
+            print(f"  Housing Capacity: {active_city.population.housing_capacity}")
             print(f"  Happiness: {active_city.population.happiness:.2f}")
             print(f"  Literacy: {active_city.population.literacy:.2%}")
             print(f"  Buildings: {len(active_city.buildings.buildings)}")
@@ -293,6 +340,163 @@ class GameREPL:
         print(f"\nTechnologies: {len(self.civilization.tech_tree.researched)}")
         print(f"Settlers Ready: {self.civilization.ready_settlers}")
         print(f"Prestige Points: {self.civilization.prestige_points}")
+
+    def cmd_describe(self, args):
+        if not args:
+            print("Usage: describe <building_id or tech_id>")
+            return
+
+        if self.game_data is None:
+            print("Game data not available.")
+            return
+
+        item_id = "_".join(args).lower()
+
+        # Try to find as a building first
+        building = self.game_data.buildings.get(item_id)
+        if building:
+            self._describe_building(building)
+            return
+
+        # Try to find as a technology
+        tech = self.game_data.technologies.get(item_id)
+        if tech:
+            self._describe_technology(tech)
+            return
+
+        print(f"Item '{item_id}' not found. Use the ID from 'buildings' or 'technologies' commands.")
+
+    def _describe_building(self, building):
+        print(f"\n=== {building.name} ===")
+        print(f"ID: {building.id}")
+        print(f"Category: {building.category.value.title()}")
+
+        # Get description from GameText
+        if building.description:
+            desc_tag = building.description
+            if not desc_tag.startswith("TXT_KEY_"):
+                desc_tag = f"TXT_KEY_BUILDING_{building.description}"
+
+            pedia_tag = f"{desc_tag}_PEDIA"
+            pedia_text = self.game_data.buildings_text.get(pedia_tag)
+
+            if pedia_text:
+                import re
+                # Replace [PARAGRAPH:x] tags with double line breaks
+                formatted_text = re.sub(r'\[PARAGRAPH:\d+\]', '\n\n', pedia_text)
+                print(f"\n{formatted_text}")
+            elif building.description and not building.description.startswith("TXT_KEY_"):
+                print(f"\n{building.description}")
+
+        # Show costs
+        if building.construction_costs:
+            costs_str = ", ".join([f"{cost.resource_id}: {cost.amount:.1f}" for cost in building.construction_costs])
+            print(f"\nCost: {costs_str}")
+
+        # Show requirements
+        if building.required_tech:
+            tech_name = building.required_tech.replace("_", " ").title()
+            print(f"Required Technology: {tech_name}")
+
+        if building.required_buildings:
+            print(f"Required Buildings: {', '.join(building.required_buildings)}")
+
+        if building.required_resources:
+            print(f"Required Resources: {', '.join(building.required_resources)}")
+
+        # Show effects
+        if building.effects:
+            print("\nBonuses:")
+            for effect_name, effect_value in building.effects.items():
+                print(f"  {effect_name}: {effect_value}")
+
+        # Show flavors
+        if building.flavors:
+            print("\nEffects:")
+            for flavor_name, flavor_value in sorted(building.flavors.items()):
+                print(f"  {flavor_name}: {flavor_value}")
+
+        # Show buildings that require this building
+        dependent_buildings = [
+            b for b in self.game_data.buildings.values()
+            if building.id in (b.required_buildings or [])
+        ]
+        if dependent_buildings:
+            print(f"\nUnlocks Buildings ({len(dependent_buildings)}):")
+            for dep_building in sorted(dependent_buildings, key=lambda b: b.name)[:10]:
+                print(f"  - {dep_building.name} ({dep_building.id})")
+            if len(dependent_buildings) > 10:
+                print(f"  ... and {len(dependent_buildings) - 10} more")
+
+    def _describe_technology(self, tech):
+        print(f"\n=== {tech.name} ===")
+        print(f"ID: {tech.id}")
+        print(f"Era: {tech.era.value.title()}")
+        print(f"Category: {tech.category.value.title()}")
+        print(f"Research Cost: {tech.research_cost:.0f}")
+
+        # Get description from GameText
+        if tech.description:
+            desc_tag = tech.description
+            if not desc_tag.startswith("TXT_KEY_"):
+                desc_tag = f"TXT_KEY_TECH_{tech.description}_PEDIA"
+
+            pedia_text = self.game_data.technologies_text.get(desc_tag)
+
+            if pedia_text:
+                import re
+                # Replace [PARAGRAPH:x] tags with double line breaks
+                formatted_text = re.sub(r'\[PARAGRAPH:\d+\]', '\n\n', pedia_text)
+                print(f"\n{formatted_text}")
+            elif tech.description and not tech.description.startswith("TXT_KEY_"):
+                print(f"\n{tech.description}")
+
+        # Show prerequisites
+        if tech.prerequisites:
+            prereq_names = []
+            for prereq_id in tech.prerequisites:
+                prereq_tech = self.game_data.technologies.get(prereq_id)
+                if prereq_tech:
+                    prereq_names.append(prereq_tech.name)
+                else:
+                    prereq_names.append(prereq_id)
+            print(f"\nPrerequisites: {', '.join(prereq_names)}")
+
+        # Show technologies that require this tech
+        dependent_techs = [
+            t for t in self.game_data.technologies.values()
+            if tech.id in t.prerequisites
+        ]
+        if dependent_techs:
+            print(f"\nUnlocks Technologies ({len(dependent_techs)}):")
+            for dep_tech in sorted(dependent_techs, key=lambda t: t.name)[:10]:
+                print(f"  - {dep_tech.name} ({dep_tech.id})")
+            if len(dependent_techs) > 10:
+                print(f"  ... and {len(dependent_techs) - 10} more")
+
+        # Show buildings that require this tech
+        dependent_buildings = [
+            b for b in self.game_data.buildings.values()
+            if b.required_tech == tech.id
+        ]
+        if dependent_buildings:
+            print(f"\nUnlocks Buildings ({len(dependent_buildings)}):")
+            for dep_building in sorted(dependent_buildings, key=lambda b: b.name)[:10]:
+                print(f"  - {dep_building.name} ({dep_building.id})")
+            if len(dependent_buildings) > 10:
+                print(f"  ... and {len(dependent_buildings) - 10} more")
+
+        # Show resources that require this tech
+        dependent_resources = [
+            r for r in self.game_data.resources.values()
+            if r.tech_reveal == tech.id
+        ]
+        if dependent_resources:
+            print(f"\nReveals Resources ({len(dependent_resources)}):")
+            for dep_resource in sorted(dependent_resources, key=lambda r: r.name)[:10]:
+                print(f"  - {dep_resource.name} ({dep_resource.id})")
+            if len(dependent_resources) > 10:
+                print(f"  ... and {len(dependent_resources) - 10} more")
 
     def cmd_resources(self, args):
         active_city = self.civilization.get_active_city()
@@ -304,8 +508,16 @@ class GameREPL:
 
         has_resources = False
         if active_city.resources.resources:
-            has_resources = True
             for res_id, resource in sorted(active_city.resources.resources.items()):
+                # Skip production and research (they're abstract/display-only)
+                if res_id in ["production", "research"]:
+                    continue
+
+                # Skip resources with 0.0 amount
+                if resource.amount <= 0.0:
+                    continue
+
+                has_resources = True
                 status = ""
                 remaining_to_cap = resource.capacity - resource.amount
                 if resource.net_rate > 0 and not resource.is_full:
@@ -325,10 +537,18 @@ class GameREPL:
 
         print("\n=== Civilization Resources ===")
         if self.civilization.resources.resources:
-            has_resources = True
             for res_id, resource in sorted(
                 self.civilization.resources.resources.items()
             ):
+                # Skip production and research
+                if res_id in ["production", "research"]:
+                    continue
+
+                # Skip resources with 0.0 amount
+                if resource.amount <= 0.0:
+                    continue
+
+                has_resources = True
                 rate_str = ""
                 if resource.net_rate != 0:
                     rate_str = f" [{resource.net_rate:+.2f}/s]"
@@ -400,7 +620,7 @@ class GameREPL:
         print(f"Housing Capacity: {pop.housing_capacity}")
         print(f"Happiness: {pop.happiness:.2f}")
         print(f"Literacy: {pop.literacy:.2%}")
-        print(f"Growth Rate: {pop.growth_rate:.2%}/day")
+        print(f"Food for Growth: {pop.food_for_growth:.1f}/{pop.food_for_growth_capacity:.1f}")
         print(f"\nIdle Workers: {pop.idle_workers}")
         print(f"Allocated Workers: {pop.allocated_workers}")
 
@@ -550,49 +770,17 @@ class GameREPL:
     def cmd_buildings(self, args):
         print("\n=== Buildings ===")
 
-        if self.civilization.buildings.buildings:
-            print(
-                f"\n--- Constructed Buildings ({len(self.civilization.buildings.buildings)}) ---"
-            )
-            for building in self.civilization.buildings.buildings:
-                active = "Active" if building.is_active else "Inactive"
-                if building.max_workers > 0:
-                    workers = f"{building.assigned_workers}/{building.max_workers}"
-                    print(f"  {building.definition.name} [{active}] Workers: {workers}")
-                else:
-                    print(f"  {building.definition.name} [{active}]")
-        else:
-            print("\nNo buildings constructed yet.")
-
-        if self.civilization.buildings.under_construction:
-            print(
-                f"\n--- Under Construction ({len(self.civilization.buildings.under_construction)}) ---"
-            )
-            production_workers = self.civilization.population.get_workers_on_task(
-                WorkforceTask.CONSTRUCTION
-            )
-            for construction in self.civilization.buildings.under_construction:
-                progress = construction.progress_percentage * 100
-                remaining = construction.remaining_production
-                print(
-                    f"  {construction.building_def.name}: {progress:.1f}% ({construction.progress:.1f}/{construction.required_production:.1f} production)"
-                )
-                if production_workers > 0:
-                    time_remaining = (
-                        remaining / (production_workers * 1.0)
-                        if production_workers > 0
-                        else float("inf")
-                    )
-                    print(
-                        f"    {production_workers} workers assigned, ~{time_remaining:.1f}s remaining"
-                    )
-                else:
-                    print("    No workers assigned (construction paused)")
+        active_city = self.civilization.get_active_city()
+        city_terrain = active_city.terrain if active_city else None
+        city_resources = active_city.available_resources if active_city else None
 
         available = []
         for building_def in self.civilization.buildings.building_definitions.values():
             if self.civilization.buildings.can_build(
-                building_def.id, self.civilization.tech_tree.researched
+                building_def.id,
+                self.civilization.tech_tree.researched,
+                city_terrain=city_terrain,
+                city_available_resources=city_resources
             ):
                 available.append(building_def)
 
@@ -623,6 +811,45 @@ class GameREPL:
                     else:
                         print()
 
+        if self.civilization.buildings.under_construction:
+            print(
+                f"\n--- Under Construction ({len(self.civilization.buildings.under_construction)}) ---"
+            )
+            production_workers = self.civilization.population.get_workers_on_task(
+                WorkforceTask.CONSTRUCTION
+            )
+            for construction in self.civilization.buildings.under_construction:
+                progress = construction.progress_percentage * 100
+                remaining = construction.remaining_production
+                print(
+                    f"  {construction.building_def.name}: {progress:.1f}% ({construction.progress:.1f}/{construction.required_production:.1f} production)"
+                )
+                if production_workers > 0:
+                    time_remaining = (
+                        remaining / (production_workers * 1.0)
+                        if production_workers > 0
+                        else float("inf")
+                    )
+                    print(
+                        f"    {production_workers} workers assigned, ~{time_remaining:.1f}s remaining"
+                    )
+                else:
+                    print("    No workers assigned (construction paused)")
+
+        if self.civilization.buildings.buildings:
+            print(
+                f"\n--- Constructed Buildings ({len(self.civilization.buildings.buildings)}) ---"
+            )
+            for building in self.civilization.buildings.buildings:
+                active = "Active" if building.is_active else "Inactive"
+                if building.max_workers > 0:
+                    workers = f"{building.assigned_workers}/{building.max_workers}"
+                    print(f"  {building.definition.name} [{active}] Workers: {workers}")
+                else:
+                    print(f"  {building.definition.name} [{active}]")
+        else:
+            print("\nNo buildings constructed yet.")
+
     def cmd_build(self, args):
         if len(args) < 1:
             print("Usage: build <building_id>")
@@ -630,8 +857,15 @@ class GameREPL:
 
         building_id = args[0].lower()
 
+        active_city = self.civilization.get_active_city()
+        city_terrain = active_city.terrain if active_city else None
+        city_resources = active_city.available_resources if active_city else None
+
         if not self.civilization.buildings.can_build(
-            building_id, self.civilization.tech_tree.researched
+            building_id,
+            self.civilization.tech_tree.researched,
+            city_terrain=city_terrain,
+            city_available_resources=city_resources
         ):
             print(f"Cannot build '{building_id}'. Check requirements.")
             return
@@ -749,10 +983,14 @@ class GameREPL:
             print("Game data not available.")
             return
 
-        new_city = self.civilization.found_city(city_name, self.game_data.resources)
+        # Get a random suitable terrain for the new city
+        terrain = self.game_data.get_random_suitable_terrain()
+        new_city = self.civilization.found_city(city_name, self.game_data.resources, terrain=terrain)
 
         if new_city:
             print(f"🏙️  Founded {city_name}!")
+            if new_city.terrain:
+                print(f"  Terrain: {new_city.terrain.name}")
             print(f"  Starting population: {new_city.population.total}")
             print(f"  Starting resources: {len(new_city.available_resources)}")
             print(f"  Settlers remaining: {self.civilization.ready_settlers}")
@@ -867,21 +1105,21 @@ class GameREPL:
         notification_printed = False
 
         if current_empty and not prev_empty:
-            print(
-                f"\r\033[K⚠️  WARNING: Food storage is empty! ({food_resource.amount:.1f}/{food_resource.capacity:.1f})"
+            self.add_message(
+                f"⚠️  WARNING: Food storage is empty! ({food_resource.amount:.1f}/{food_resource.capacity:.1f})"
             )
             if food_resource.net_rate < 0:
-                print(
-                    f"\r\033[K   Your population is starving! (Consumption: {food_resource.consumption_rate:.1f}/s, Production: {food_resource.production_rate:.1f}/s)"
+                self.add_message(
+                    f"   Your population is starving! (Consumption: {food_resource.consumption_rate:.1f}/s, Production: {food_resource.production_rate:.1f}/s)"
                 )
             notification_printed = True
         elif current_full and not prev_full:
-            print(
-                f"\r\033[K📦 Food storage is full! ({food_resource.amount:.1f}/{food_resource.capacity:.1f})"
+            self.add_message(
+                f"📦 Food storage is full! ({food_resource.amount:.1f}/{food_resource.capacity:.1f})"
             )
             if food_resource.production_rate > 0:
-                print(
-                    "\r\033[K   Consider building more storage or reducing food production."
+                self.add_message(
+                    "   Consider building more storage or reducing food production."
                 )
             notification_printed = True
 
@@ -894,22 +1132,22 @@ class GameREPL:
 
     def _print_debug_update(self, update: dict):
         delta = update.get("delta_time", 0.0)
-        print(f"\n[DEBUG] Tick: {delta:.3f}s elapsed")
-        print(f"  Happiness: {self.civilization.population.happiness:.2f}")
+        self.add_message(f"[DEBUG] Tick: {delta:.3f}s elapsed")
+        self.add_message(f"  Happiness: {self.civilization.population.happiness:.2f}")
 
         if update.get("resource_changes"):
-            print("  Resource changes:")
+            self.add_message("  Resource changes:")
             for res_id, change in update["resource_changes"].items():
-                print(f"    {res_id}: {change:+.2f}")
+                self.add_message(f"    {res_id}: {change:+.2f}")
 
         if update.get("population_change", 0) != 0:
-            print(f"  Population: {update['population_change']:+d}")
+            self.add_message(f"  Population: {update['population_change']:+d}")
 
         if update.get("completed_techs"):
-            print(f"  Completed techs: {', '.join(update['completed_techs'])}")
+            self.add_message(f"  Completed techs: {', '.join(update['completed_techs'])}")
 
         if update.get("completed_buildings"):
-            print(f"  Completed buildings: {', '.join(update['completed_buildings'])}")
+            self.add_message(f"  Completed buildings: {', '.join(update['completed_buildings'])}")
 
     def cleanup(self):
         self.game_loop.stop()
@@ -929,3 +1167,101 @@ class GameREPL:
             return f"{seconds / 60:.1f}m"
         else:
             return f"{seconds / 3600:.1f}h"
+
+    def _format_tech_completion(self, tech) -> list[str]:
+        """Format a detailed completion notification for a technology"""
+        lines = []
+        lines.append(f"🎓 Technology completed: {tech.name}!")
+
+        # Get quote text for technology
+        quote_tag = f"TXT_KEY_TECH_{tech.id.upper()}_QUOTE"
+        quote_text = self.game_data.technologies_text.get(quote_tag)
+        if quote_text:
+            import re
+            # Replace paragraph tags with line breaks and [SPACE][SPACE] with two spaces
+            formatted_quote = re.sub(r'\[PARAGRAPH:\d+\]', '\n   ', quote_text)
+            formatted_quote = re.sub(r'\[SPACE\]\[SPACE\]', '  ', formatted_quote)
+            lines.append(f"   {formatted_quote}")
+
+        # Show what this tech unlocks
+        unlocks = []
+
+        # Technologies unlocked
+        dependent_techs = [
+            t for t in self.game_data.technologies.values()
+            if tech.id in t.prerequisites
+        ]
+        if dependent_techs:
+            tech_names = [t.name for t in sorted(dependent_techs, key=lambda t: t.name)[:3]]
+            if len(dependent_techs) > 3:
+                tech_names.append(f"and {len(dependent_techs) - 3} more")
+            unlocks.append(f"   Technologies: {', '.join(tech_names)}")
+
+        # Buildings unlocked
+        dependent_buildings = [
+            b for b in self.game_data.buildings.values()
+            if b.required_tech == tech.id
+        ]
+        if dependent_buildings:
+            building_names = [b.name for b in sorted(dependent_buildings, key=lambda b: b.name)[:3]]
+            if len(dependent_buildings) > 3:
+                building_names.append(f"and {len(dependent_buildings) - 3} more")
+            unlocks.append(f"   Buildings: {', '.join(building_names)}")
+
+        # Resources unlocked
+        dependent_resources = [
+            r for r in self.game_data.resources.values()
+            if r.tech_reveal == tech.id
+        ]
+        if dependent_resources:
+            resource_names = [r.name for r in sorted(dependent_resources, key=lambda r: r.name)[:3]]
+            if len(dependent_resources) > 3:
+                resource_names.append(f"and {len(dependent_resources) - 3} more")
+            unlocks.append(f"   Resources: {', '.join(resource_names)}")
+
+        if unlocks:
+            lines.append("")
+            lines.append("   Unlocks:")
+            lines.extend(unlocks)
+
+        return lines
+
+    def _format_building_completion(self, building) -> list[str]:
+        """Format a detailed completion notification for a building"""
+        lines = []
+        lines.append(f"🏗️  Building completed: {building.name}!")
+
+        # Get first sentence of pedia text as brief description
+        desc_tag = f"TXT_KEY_BUILDING_{building.id.upper()}_PEDIA"
+        pedia_text = self.game_data.buildings_text.get(desc_tag)
+        if pedia_text:
+            import re
+            # Clean up paragraph tags and get first sentence
+            clean_text = re.sub(r'\[PARAGRAPH:\d+\]', ' ', pedia_text)
+            # Find first sentence (up to period, question mark, or exclamation)
+            first_sentence = re.split(r'[.!?]\s', clean_text, 1)[0] + '.'
+            if len(first_sentence) > 200:  # Truncate if too long
+                first_sentence = first_sentence[:197] + '...'
+            lines.append(f"   {first_sentence}")
+
+        # Show flavor effects
+        if building.flavors:
+            lines.append("")
+            lines.append("   Effects:")
+            for flavor_name, flavor_value in sorted(building.flavors.items()):
+                lines.append(f"   {flavor_name}: {flavor_value}")
+
+        # Show what this building unlocks
+        dependent_buildings = [
+            b for b in self.game_data.buildings.values()
+            if building.id in (b.required_buildings or [])
+        ]
+        if dependent_buildings:
+            building_names = [b.name for b in sorted(dependent_buildings, key=lambda b: b.name)[:3]]
+            if len(dependent_buildings) > 3:
+                building_names.append(f"and {len(dependent_buildings) - 3} more")
+            lines.append("")
+            lines.append("   Unlocks:")
+            lines.append(f"   Buildings: {', '.join(building_names)}")
+
+        return lines

@@ -82,6 +82,10 @@ class Civilization:
     prestige_points: int = 0
     prestige_count: int = 0
 
+    # References to game data for tile generation
+    _all_resources: dict = field(default_factory=dict)
+    _all_terrains: dict = field(default_factory=dict)
+
     def __post_init__(self):
         if not self.cities:
             self.add_city("Capital", starting_city=True)
@@ -92,11 +96,13 @@ class Civilization:
         starting_city: bool = False,
         starting_population: int = 10,
         starting_resource_count: int = 3,
+        terrain: Optional["TerrainType"] = None,
     ) -> City:
         city_id = str(uuid.uuid4())
         city = City(
             id=city_id,
             name=name,
+            terrain=terrain,
         )
         city.population.total = starting_population
         city.population.housing_capacity = starting_population
@@ -108,7 +114,7 @@ class Civilization:
 
         return city
 
-    def found_city(self, name: str, all_resources: dict) -> Optional[City]:
+    def found_city(self, name: str, all_resources: dict, terrain: Optional["TerrainType"] = None) -> Optional[City]:
         if self.ready_settlers <= 0:
             return None
 
@@ -122,9 +128,10 @@ class Civilization:
             starting_city=False,
             starting_population=starting_pop,
             starting_resource_count=resource_count,
+            terrain=terrain,
         )
 
-        city.initialize_starting_resources(all_resources, count=resource_count)
+        city.initialize_starting_resources(all_resources, self._all_terrains, count=resource_count)
 
         if self.cities and len(self.cities) > 1:
             source_city = self.cities[0]
@@ -196,9 +203,14 @@ class Civilization:
                 city.buildings.add_building_definition(building_def)
 
     def initialize_available_resources(self, all_resources: dict):
+        self._all_resources = all_resources
         capital = self.get_active_city()
         if capital:
-            capital.initialize_starting_resources(all_resources, count=3)
+            capital.initialize_starting_resources(all_resources, self._all_terrains, count=3)
+
+    def set_terrains(self, all_terrains: dict):
+        """Store reference to all terrains for tile generation"""
+        self._all_terrains = all_terrains
 
     def get_time_since_last_update(self) -> float:
         current_time = time.time()
@@ -215,6 +227,7 @@ class Civilization:
         update_summary = {
             "delta_time": delta_time,
             "completed_techs": [],
+            "completed_buildings": [],
             "cities": {},
             "total_population": 0,
             "total_population_change": 0,
@@ -231,11 +244,11 @@ class Civilization:
             )
 
             completed_buildings_to_keep = []
-            for completed_building_name in city_summary.get("completed_buildings", []):
+            for completed_building_id in city_summary.get("completed_buildings", []):
                 matching_buildings = [
                     b
                     for b in city.buildings.buildings
-                    if b.definition.name == completed_building_name
+                    if b.definition.id == completed_building_id
                 ]
                 if matching_buildings:
                     building = matching_buildings[-1]  # Get the most recently added
@@ -243,11 +256,21 @@ class Civilization:
                         city.buildings.buildings.remove(building)
                         settlers_completed += 1
                     else:
-                        completed_buildings_to_keep.append(completed_building_name)
+                        completed_buildings_to_keep.append(completed_building_id)
+                        # Add to civilization-level completed buildings list for notifications
+                        update_summary["completed_buildings"].append(completed_building_id)
                 else:
-                    completed_buildings_to_keep.append(completed_building_name)
+                    completed_buildings_to_keep.append(completed_building_id)
+                    # Add to civilization-level completed buildings list for notifications
+                    update_summary["completed_buildings"].append(completed_building_id)
 
             city_summary["completed_buildings"] = completed_buildings_to_keep
+
+            # Handle culture level-ups and generate tiles
+            if city_summary.get("culture_level_up"):
+                if self._all_terrains and self._all_resources:
+                    new_tiles = city.generate_tiles(self._all_terrains, self._all_resources, count=3)
+                    city_summary["new_tiles_count"] = len(new_tiles)
 
             research_workers = city.population.get_workers_on_task(
                 WorkforceTask.RESEARCH
@@ -280,7 +303,7 @@ class Civilization:
         if self.tech_tree.current_research:
             completed_tech = self.tech_tree.add_research_points(total_research_output)
             if completed_tech:
-                update_summary["completed_techs"].append(completed_tech.name)
+                update_summary["completed_techs"].append(completed_tech.id)
                 self._apply_tech_effects(completed_tech.id)
 
         return update_summary

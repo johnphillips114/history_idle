@@ -9,6 +9,7 @@ from ..models import (
     BuildingCategory,
     ResourceCost,
     CivilizationDefinition,
+    TerrainType,
 )
 
 
@@ -29,6 +30,7 @@ class C2CDataParser:
                 description = ""
                 tech_reveal = None
                 bonus_class = None
+                compatible_terrains = []
 
                 type_elem = bonus_info.find("Type")
                 if type_elem is not None and type_elem.text:
@@ -56,6 +58,17 @@ class C2CDataParser:
                         "BONUSCLASS_", ""
                     ).lower()
 
+                # Extract terrain compatibility
+                terrain_booleans_elem = bonus_info.find("TerrainBooleans")
+                if terrain_booleans_elem is not None:
+                    for terrain_boolean in terrain_booleans_elem.findall("TerrainBoolean"):
+                        terrain_type_elem = terrain_boolean.find("TerrainType")
+                        b_terrain_elem = terrain_boolean.find("bTerrain")
+                        if (terrain_type_elem is not None and terrain_type_elem.text and
+                            b_terrain_elem is not None and b_terrain_elem.text == "1"):
+                            terrain_id = terrain_type_elem.text.replace("TERRAIN_", "").lower()
+                            compatible_terrains.append(terrain_id)
+
                 if resource_id and name:
                     category = C2CDataParser._categorize_resource(resource_id, name)
 
@@ -68,6 +81,7 @@ class C2CDataParser:
                         base_storage_cap=100.0,
                         tech_reveal=tech_reveal,
                         bonus_class=bonus_class,
+                        compatible_terrains=compatible_terrains,
                     )
                     resources.append(resource)
 
@@ -180,6 +194,8 @@ class C2CDataParser:
                 required_buildings = []
                 effects = {}
                 construction_time = 0.0
+                vicinity_bonus = None
+                prereq_or_terrain = []
 
                 type_elem = building_info.find("Type")
                 if type_elem is not None and type_elem.text:
@@ -296,6 +312,24 @@ class C2CDataParser:
                                 except ValueError:
                                     pass
 
+                # Parse vicinity bonus (resource required in city)
+                vicinity_elem = building_info.find("VicinityBonus")
+                if vicinity_elem is not None and vicinity_elem.text:
+                    vicinity_bonus = vicinity_elem.text.replace("BONUS_", "").lower()
+
+                # Parse terrain requirements (city must be on one of these terrains)
+                prereq_or_terrain_elem = building_info.find("PrereqOrTerrain")
+                if prereq_or_terrain_elem is not None:
+                    for prereq_terrain in prereq_or_terrain_elem.findall("PrereqTerrain"):
+                        terrain_type_elem = prereq_terrain.find("TerrainType")
+                        if terrain_type_elem is not None and terrain_type_elem.text:
+                            terrain_id = terrain_type_elem.text.replace("TERRAIN_", "").lower()
+                            prereq_or_terrain.append(terrain_id)
+
+                # Hardcoded housing effects for specific buildings
+                if building_id == "cave_shelter":
+                    effects["housing"] = 5.0
+
                 if building_id and name:
                     category = C2CDataParser._categorize_building(building_id, effects)
 
@@ -311,6 +345,8 @@ class C2CDataParser:
                         required_buildings=required_buildings,
                         effects=effects,
                         flavors=flavors,
+                        vicinity_bonus=vicinity_bonus,
+                        prereq_or_terrain=prereq_or_terrain,
                     )
                     buildings.append(building)
 
@@ -471,3 +507,117 @@ class C2CDataParser:
             print(f"Error parsing civilizations XML: {e}")
 
         return civilizations
+
+    @staticmethod
+    def parse_gametext_xml(xml_content: str) -> dict[str, str]:
+        """Parse GameText XML and return a mapping of Tag -> English text"""
+        text_map = {}
+
+        try:
+            import re
+
+            xml_content = re.sub(r' xmlns="[^"]+"', "", xml_content)
+            root = ET.fromstring(xml_content)
+
+            for text_elem in root.findall(".//TEXT"):
+                tag_elem = text_elem.find("Tag")
+                english_elem = text_elem.find("English")
+
+                if tag_elem is not None and tag_elem.text:
+                    if english_elem is not None and english_elem.text:
+                        text_map[tag_elem.text] = english_elem.text
+
+        except Exception as e:
+            print(f"Error parsing GameText XML: {e}")
+
+        return text_map
+
+    @staticmethod
+    def parse_terrains_xml(xml_content: str) -> list[TerrainType]:
+        terrains = []
+
+        try:
+            import re
+
+            xml_content = re.sub(r' xmlns="[^"]+"', "", xml_content)
+            root = ET.fromstring(xml_content)
+
+            # Track when we're in the valid range
+            in_valid_range = False
+
+            for terrain_info in root.findall(".//TerrainInfo"):
+                terrain_id = None
+                name = None
+                description = ""
+                can_found = False
+                food_yield = 0.0
+                production_yield = 0.0
+                currency_yield = 0.0
+
+                type_elem = terrain_info.find("Type")
+                if type_elem is not None and type_elem.text:
+                    terrain_id = type_elem.text.replace("TERRAIN_", "").lower()
+
+                    # Check if we're entering or exiting the valid range
+                    if terrain_id == "grassland":
+                        in_valid_range = True
+                    elif terrain_id == "muddy":
+                        in_valid_range = True  # Include muddy
+                    elif in_valid_range and terrain_id not in ["grassland", "lush", "plains", "rocky", "barren", "tundra", "marsh", "cold_marsh", "scrub", "desert", "dunes", "salt_flats", "muddy"]:
+                        in_valid_range = False
+
+                desc_elem = terrain_info.find("Description")
+                if desc_elem is not None and desc_elem.text:
+                    name = (
+                        desc_elem.text.replace("TXT_KEY_TERRAIN_", "")
+                        .replace("_", " ")
+                        .title()
+                    )
+
+                civ_elem = terrain_info.find("Civilopedia")
+                if civ_elem is not None and civ_elem.text:
+                    description = civ_elem.text
+
+                # Check if cities can be founded here
+                found_elem = terrain_info.find("bFound")
+                if found_elem is not None and found_elem.text == "1":
+                    can_found = True
+
+                # Parse yields (order: food, production, currency)
+                yields_elem = terrain_info.find("Yields")
+                if yields_elem is not None:
+                    yield_values = yields_elem.findall("iYield")
+                    if len(yield_values) > 0 and yield_values[0].text:
+                        try:
+                            food_yield = float(yield_values[0].text)
+                        except ValueError:
+                            pass
+                    if len(yield_values) > 1 and yield_values[1].text:
+                        try:
+                            production_yield = float(yield_values[1].text)
+                        except ValueError:
+                            pass
+                    if len(yield_values) > 2 and yield_values[2].text:
+                        try:
+                            currency_yield = float(yield_values[2].text)
+                        except ValueError:
+                            pass
+
+                if terrain_id and name and in_valid_range and can_found:
+                    terrain = TerrainType(
+                        id=terrain_id,
+                        name=name,
+                        description=description,
+                        can_found=can_found,
+                        food_yield=food_yield,
+                        production_yield=production_yield,
+                        currency_yield=currency_yield,
+                    )
+                    terrains.append(terrain)
+
+        except ET.ParseError as e:
+            print(f"Error parsing terrains XML: {e}")
+        except Exception as e:
+            print(f"Unexpected error parsing terrains: {e}")
+
+        return terrains

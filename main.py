@@ -43,11 +43,14 @@ def main():
         active_city = civ.get_active_city()
         if active_city:
             active_city.name = first_city_name
+            # Assign a random suitable terrain to the starting city
+            active_city.terrain = game_data.get_random_suitable_terrain()
 
         civ.initialize_starting_resources()
         civ.load_tech_tree(game_data.technologies)
         civ.load_buildings(game_data.buildings)
         civ.initialize_available_resources(game_data.resources)
+        civ.set_terrains(game_data.terrains)
         print(f"Loaded {len(civ.tech_tree.technologies)} technologies into tech tree")
 
         if active_city:
@@ -58,6 +61,11 @@ def main():
         # Load tech tree and buildings definitions for existing save
         civ.load_tech_tree(game_data.technologies)
         civ.load_buildings(game_data.buildings)
+        civ.set_terrains(game_data.terrains)
+
+        # Ensure resources and terrains are loaded
+        if hasattr(civ, '_all_resources') and not civ._all_resources:
+            civ._all_resources = game_data.resources
 
         # Restore buildings and research from save data
         save_system.restore_from_save_data(civ)

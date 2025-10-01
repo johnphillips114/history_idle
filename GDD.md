@@ -17,7 +17,7 @@
 - Small scale technological innovations over a large scope of time
 - Start from the Paleolithic era to a post-modern future era
 - Occasional events that give the player agency to steer the fate of their society
-- 
+-
 
 ### 1.3 Inspirations
 - **Evolve Incremental** - Idle mechanics, prestige systems
@@ -41,26 +41,14 @@ Players can adjust the allocation of their available population to extract resou
 The same progress as in moment-to-moment gameplay. They may encounter one or two random events in a single session.
 
 ### 2.3 Medium-Term Loop (Days/Weeks)
-Over many sessions, the player will be able to discover new technologies to unlock new buildings and other new technologies to research. A player's first single playthrough will take weeks to complete. 
+Over many sessions, the player will be able to discover new technologies to unlock new buildings and other new technologies to research. A player's first single playthrough will take weeks to complete.
 
 ### 2.4 Long-Term Loop (Prestige/Meta)
-After completing a single playthrough, the player can prestige into a new playthrough. They will gain prestige points that can be redeemed in a Meta tech-tree which offers different gamplay bonuses for future playthroughs. 
+After completing a single playthrough, the player can prestige into a new playthrough. They will gain prestige points that can be redeemed in a Meta tech-tree which offers different gamplay bonuses for future playthroughs.
 
 ---
 
 ## 3. Progression Systems
-
-### 3.1 Historical Eras
-- Paleolithic Age
-- Neolithic Age
-- Bronze Age
-- Iron Age
-- Classical Age
-- Medieval Age
-- Renaissance
-- Industrial Age
-- Modern Age
-- Future Age
 
 ### 3.2 Era Transition Mechanics
 Players progress through eras by discovering technologies.
@@ -71,42 +59,8 @@ Prestiging starts a new game in a new start location. Players are awarded a numb
 ### 3.4 Unlocks & Milestones
 [Major progression gates and achievements]
 
-### 3.5 Start Location 
-The player is assigned a random starting location and culture to begin the game and after a prestige. These include:
-- Western Europe
-- Northern Europe
-- West Mediterranean
-- East Mediterranean
-- European Steppes
-- Levant
-- Mesopotamia 
-- Nile
-- Maghreb
-- Persian
-- Indus 
-- Asian Steppes
-- Southeast Asia
-- Indonesia
-- Australia
-- Polynesia
-- Yellow River
-- Japan
-- Cascadia
-- Prairie Steppes 
-- Great Lakes
-- East Coast
-- Mississippi
-- Southwest
-- Mesoamerican
-- Central American
-- Carribbean
-- Andes
-- La Plata
-- Amazonian
-- Serengeti
-- Congo
-- African Great Lakes
-- Ethiopian Highlands
+### 3.5 Start Location
+The player is assigned a random civilization at the start of the game. This is based on Caveman2Cosmos.
 
 ---
 
@@ -170,16 +124,7 @@ Given the number of buildings, this will not be elaborated here in the design do
 ## 8. Government & Civics
 
 ### 8.1 Government Types
-- Tribal
-- Chiefdom
-- Democracy
-- Monarchy
-- Republic
-- Techocracy
-- Oligarchy
-- Autocracy
-- Anarchy
-- Corpocracy
+To be developed later
 
 ### 8.2 Civic Policies
 To be described later
@@ -204,7 +149,7 @@ Players can't automate most tasks. Certain technologies allow the player to queu
 
 ### 11.2 Historical Events
 Certain historical events can occur, such as:
-- The Black Plague 
+- The Black Plague
 - Religious Reformation
 - Volcanic Eruptions
 
@@ -223,7 +168,7 @@ The interface is text-based with buttons for players to allocate workers.
 ## 16. Balance & Tuning
 
 ### 16.1 Pacing Goals
-Discovering all of the technologies should take the player about 2 weeks on their first playthrough. 
+Discovering all of the technologies should take the player about 2 weeks on their first playthrough.
 
 ---
 

@@ -5,6 +5,7 @@ from typing import Optional
 
 class C2CDataLoader:
     BASE_URL = "https://raw.githubusercontent.com/caveman2cosmos/Caveman2Cosmos/b0fc0fc72072a1bf72882d733f68baedf763684c/Assets/XML"
+    GAMETEXT_BASE_URL = "https://raw.githubusercontent.com/caveman2cosmos/Caveman2Cosmos/refs/heads/master/Assets/XML/GameText"
 
     def __init__(
         self, cache_dir: Optional[Path] = None, local_data_dir: Optional[Path] = None
@@ -40,6 +41,24 @@ class C2CDataLoader:
         return self._get_cached_file(
             "Civilizations/CIV4CivilizationInfos.xml",
             f"{self.BASE_URL}/Civilizations/CIV4CivilizationInfos.xml",
+        )
+
+    def get_terrain_xml(self) -> str:
+        return self._get_cached_file(
+            "Terrain/CIV4TerrainInfos.xml",
+            f"{self.BASE_URL}/Terrain/CIV4TerrainInfos.xml",
+        )
+
+    def get_buildings_gametext_xml(self) -> str:
+        return self._get_cached_file(
+            "GameText/Buildings_CIV4GameText.xml",
+            f"{self.GAMETEXT_BASE_URL}/Buildings_CIV4GameText.xml",
+        )
+
+    def get_technologies_gametext_xml(self) -> str:
+        return self._get_cached_file(
+            "GameText/Tech_CIV4GameText.xml",
+            f"{self.GAMETEXT_BASE_URL}/Tech_CIV4GameText.xml",
         )
 
     def _get_cached_file(self, relative_path: str, url: str) -> str:
