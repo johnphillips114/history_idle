@@ -1,7 +1,7 @@
 {
   "grassland": {
     "name": "Grassland",
-    "description": "Fertile plains covered in grass, ideal for settlement.",
+    "description": "Grassland terrain.",
     "can_found": true,
     "yields": {
       "food": 2.0,
@@ -9,131 +9,9 @@
       "currency": 0.0
     }
   },
-
-  "plains": {
-    "name": "Plains",
-    "description": "Flat, open land suitable for agriculture.",
-    "can_found": true,
-    "yields": {
-      "food": 1.0,
-      "production": 1.0,
-      "currency": 0.0
-    }
-  },
-
-  "forest": {
-    "name": "Forest",
-    "description": "Dense woodland providing timber and game.",
-    "can_found": true,
-    "yields": {
-      "food": 1.0,
-      "production": 2.0,
-      "currency": 0.0
-    }
-  },
-
-  "hills": {
-    "name": "Hills",
-    "description": "Rolling elevated terrain rich in minerals.",
-    "can_found": true,
-    "yields": {
-      "food": 0.0,
-      "production": 3.0,
-      "currency": 0.0
-    }
-  },
-
-  "mountains": {
-    "name": "Mountains",
-    "description": "Towering peaks, difficult but resource-rich.",
-    "can_found": false,
-    "yields": {
-      "food": 0.0,
-      "production": 1.0,
-      "currency": 0.0
-    }
-  },
-
-  "desert": {
-    "name": "Desert",
-    "description": "Arid land with sparse vegetation.",
-    "can_found": true,
-    "yields": {
-      "food": 0.0,
-      "production": 0.0,
-      "currency": 1.0
-    }
-  },
-
-  "tundra": {
-    "name": "Tundra",
-    "description": "Cold, frozen land with limited resources.",
-    "can_found": true,
-    "yields": {
-      "food": 1.0,
-      "production": 0.0,
-      "currency": 0.0
-    }
-  },
-
-  "snow": {
-    "name": "Snow",
-    "description": "Permanently frozen wasteland.",
-    "can_found": false,
-    "yields": {
-      "food": 0.0,
-      "production": 0.0,
-      "currency": 0.0
-    }
-  },
-
-  "coast": {
-    "name": "Coast",
-    "description": "Shallow water along the shore.",
-    "can_found": false,
-    "yields": {
-      "food": 1.0,
-      "production": 0.0,
-      "currency": 1.0
-    }
-  },
-
-  "ocean": {
-    "name": "Ocean",
-    "description": "Deep water far from land.",
-    "can_found": false,
-    "yields": {
-      "food": 1.0,
-      "production": 0.0,
-      "currency": 2.0
-    }
-  },
-
-  "jungle": {
-    "name": "Jungle",
-    "description": "Dense tropical forest teeming with life.",
-    "can_found": true,
-    "yields": {
-      "food": 1.0,
-      "production": 1.0,
-      "currency": 0.0
-    }
-  },
-
-  "marsh": {
-    "name": "Marsh",
-    "description": "Wetland with standing water and vegetation.",
-    "can_found": true,
-    "yields": {
-      "food": 2.0,
-      "production": 0.0,
-      "currency": 0.0
-    }
-  },
-
   "lush": {
     "name": "Lush",
-    "description": "Exceptionally fertile land bursting with growth.",
+    "description": "Lush terrain.",
     "can_found": true,
     "yields": {
       "food": 3.0,
@@ -141,10 +19,29 @@
       "currency": 0.0
     }
   },
-
+  "plains": {
+    "name": "Plains",
+    "description": "Plains terrain.",
+    "can_found": true,
+    "yields": {
+      "food": 1.0,
+      "production": 1.0,
+      "currency": 0.0
+    }
+  },
+  "barren": {
+    "name": "Barren",
+    "description": "Barren terrain.",
+    "can_found": true,
+    "yields": {
+      "food": 0.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
   "rocky": {
     "name": "Rocky",
-    "description": "Rough terrain covered in stones and boulders.",
+    "description": "Rocky terrain.",
     "can_found": true,
     "yields": {
       "food": 0.0,
@@ -152,10 +49,129 @@
       "currency": 0.0
     }
   },
-
-  "river": {
-    "name": "River",
-    "description": "Fresh flowing water supporting life.",
+  "badland": {
+    "name": "Badland",
+    "description": "Badland terrain.",
+    "can_found": true,
+    "yields": {
+      "food": 0.0,
+      "production": 1.0,
+      "currency": 0.0
+    }
+  },
+  "jagged": {
+    "name": "Jagged",
+    "description": "Jagged terrain.",
+    "can_found": true,
+    "yields": {
+      "food": 0.0,
+      "production": 1.0,
+      "currency": 0.0
+    }
+  },
+  "desert": {
+    "name": "Desert",
+    "description": "Desert terrain.",
+    "can_found": true,
+    "yields": {
+      "food": 0.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+  "scrub": {
+    "name": "Scrub",
+    "description": "Scrub terrain.",
+    "can_found": true,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+  "dunes": {
+    "name": "Dunes",
+    "description": "Dunes terrain.",
+    "can_found": true,
+    "yields": {
+      "food": 0.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+  "salt_flats": {
+    "name": "Salt Flats",
+    "description": "Salt Flats terrain.",
+    "can_found": true,
+    "yields": {
+      "food": 0.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+  "taiga": {
+    "name": "Taiga",
+    "description": "Taiga terrain.",
+    "can_found": true,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+  "tundra": {
+    "name": "Tundra",
+    "description": "Tundra terrain.",
+    "can_found": true,
+    "yields": {
+      "food": 0.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+  "permafrost": {
+    "name": "Permafrost",
+    "description": "Permafrost terrain.",
+    "can_found": true,
+    "yields": {
+      "food": 0.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+  "ice": {
+    "name": "Ice",
+    "description": "Ice terrain.",
+    "can_found": true,
+    "yields": {
+      "food": 0.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+  "marsh": {
+    "name": "Marsh",
+    "description": "Marsh terrain.",
+    "can_found": true,
+    "yields": {
+      "food": 1.0,
+      "production": 1.0,
+      "currency": 0.0
+    }
+  },
+  "muddy": {
+    "name": "Muddy",
+    "description": "Muddy terrain.",
+    "can_found": true,
+    "yields": {
+      "food": 1.0,
+      "production": 1.0,
+      "currency": 0.0
+    }
+  },
+  "coast": {
+    "name": "Coast",
+    "description": "Coast terrain.",
     "can_found": false,
     "yields": {
       "food": 2.0,
@@ -163,13 +179,242 @@
       "currency": 1.0
     }
   },
-
-  "lake": {
-    "name": "Lake",
-    "description": "Inland body of fresh water.",
+  "coast_polar": {
+    "name": "Coast Polar",
+    "description": "Coast Polar terrain.",
     "can_found": false,
     "yields": {
       "food": 2.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "coast_tropical": {
+    "name": "Coast Tropical",
+    "description": "Coast Tropical terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 2.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "ocean": {
+    "name": "Ocean",
+    "description": "Ocean terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "ocean_polar": {
+    "name": "Ocean Polar",
+    "description": "Ocean Polar terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "ocean_tropical": {
+    "name": "Ocean Tropical",
+    "description": "Ocean Tropical terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "sea": {
+    "name": "Sea",
+    "description": "Sea terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "sea_polar": {
+    "name": "Sea Polar",
+    "description": "Sea Polar terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "sea_tropical": {
+    "name": "Sea Tropical",
+    "description": "Sea Tropical terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "coast_deep": {
+    "name": "Coast Deep",
+    "description": "Coast Deep terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "coast_deep_polar": {
+    "name": "Coast Deep Polar",
+    "description": "Coast Deep Polar terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "coast_deep_tropical": {
+    "name": "Coast Deep Tropical",
+    "description": "Coast Deep Tropical terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "sea_deep": {
+    "name": "Sea Deep",
+    "description": "Sea Deep terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "sea_deep_polar": {
+    "name": "Sea Deep Polar",
+    "description": "Sea Deep Polar terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "sea_deep_tropical": {
+    "name": "Sea Deep Tropical",
+    "description": "Sea Deep Tropical terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "trench": {
+    "name": "Trench",
+    "description": "Trench terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "trench_polar": {
+    "name": "Trench Polar",
+    "description": "Trench Polar terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "trench_tropical": {
+    "name": "Trench Tropical",
+    "description": "Trench Tropical terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 1.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "lake_shore": {
+    "name": "Freshwater Coast",
+    "description": "Freshwater Coast terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 3.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "lake": {
+    "name": "Freshwater Sea",
+    "description": "Freshwater Sea terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 2.0,
+      "production": 0.0,
+      "currency": 1.0
+    }
+  },
+  "infected_water": {
+    "name": "Infected Water",
+    "description": "Infected Water terrain.",
+    "can_found": false,
+    "yields": {
+      "food": -5.0,
+      "production": -5.0,
+      "currency": -5.0
+    }
+  },
+  "plagued_water": {
+    "name": "Plagued Water",
+    "description": "Plagued Water terrain.",
+    "can_found": false,
+    "yields": {
+      "food": -10.0,
+      "production": -10.0,
+      "currency": -10.0
+    }
+  },
+  "peak": {
+    "name": "Peak",
+    "description": "Peak terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 0.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+  "hill": {
+    "name": "Hill",
+    "description": "Hill terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 0.0,
+      "production": 0.0,
+      "currency": 0.0
+    }
+  },
+  "none": {
+    "name": "None",
+    "description": "None terrain.",
+    "can_found": false,
+    "yields": {
+      "food": 0.0,
       "production": 0.0,
       "currency": 0.0
     }

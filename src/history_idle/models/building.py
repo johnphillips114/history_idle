@@ -25,7 +25,8 @@ class BuildingDefinition:
     id: str
     name: str
     description: str
-    category: BuildingCategory
+    pedia: Optional[str] = None
+    category: BuildingCategory = BuildingCategory.INFRASTRUCTURE
     construction_costs: list[ResourceCost] = field(default_factory=list)
     construction_time: float = 0.0  # Base construction time in seconds
     maintenance_costs: list[ResourceCost] = field(default_factory=list)
@@ -167,6 +168,14 @@ class BuildingManager:
             current_count = self.get_building_count(building_id)
             if current_count >= building_def.max_count:
                 return False
+
+        # Check required resources (all must be available in city)
+        if building_def.required_resources:
+            if city_available_resources is None:
+                return False
+            for required_resource in building_def.required_resources:
+                if required_resource not in city_available_resources:
+                    return False
 
         # Check vicinity bonus (resource must be in city's available resources)
         if building_def.vicinity_bonus:

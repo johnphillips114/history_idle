@@ -66,7 +66,9 @@ class GameREPL:
         }
 
     def clear_screen(self):
-        os.system("clear" if os.name != "nt" else "cls")
+        """Clear screen using ANSI codes to avoid flashing."""
+        # Move cursor to home (0,0) and clear from cursor to end of screen
+        print("\033[H\033[J", end="", flush=True)
 
     def add_message(self, message: str):
         """Add a message to the scrolling message buffer."""
@@ -146,6 +148,10 @@ class GameREPL:
         print("=" * 60)
 
     def start(self):
+        # Use alternate screen buffer and hide cursor to prevent flicker
+        print("\033[?1049h", end="", flush=True)  # Enter alternate screen
+        print("\033[?25l", end="", flush=True)    # Hide cursor
+
         self.clear_screen()
         self.display_status()
         self.add_message("Type 'help' for available commands.")
@@ -176,8 +182,8 @@ class GameREPL:
                             for tech_id in update["completed_techs"]:
                                 tech = self.game_data.technologies.get(tech_id) if self.game_data else None
                                 if tech:
-                                    for msg in self._format_tech_completion(tech):
-                                        self.add_message(msg)
+                                    msg_lines = self._format_tech_completion(tech)
+                                    self.add_message("\n".join(msg_lines))
                                 else:
                                     self.add_message(f"🎓 Technology completed: {tech_id}!")
 
@@ -185,8 +191,8 @@ class GameREPL:
                             for building_id in update["completed_buildings"]:
                                 building = self.game_data.buildings.get(building_id) if self.game_data else None
                                 if building:
-                                    for msg in self._format_building_completion(building):
-                                        self.add_message(msg)
+                                    msg_lines = self._format_building_completion(building)
+                                    self.add_message("\n".join(msg_lines))
                                 else:
                                     self.add_message(f"🏗️  Building completed: {building_id}!")
 
@@ -371,22 +377,11 @@ class GameREPL:
         print(f"ID: {building.id}")
         print(f"Category: {building.category.value.title()}")
 
-        # Get description from GameText
-        if building.description:
-            desc_tag = building.description
-            if not desc_tag.startswith("TXT_KEY_"):
-                desc_tag = f"TXT_KEY_BUILDING_{building.description}"
-
-            pedia_tag = f"{desc_tag}_PEDIA"
-            pedia_text = self.game_data.buildings_text.get(pedia_tag)
-
-            if pedia_text:
-                import re
-                # Replace [PARAGRAPH:x] tags with double line breaks
-                formatted_text = re.sub(r'\[PARAGRAPH:\d+\]', '\n\n', pedia_text)
-                print(f"\n{formatted_text}")
-            elif building.description and not building.description.startswith("TXT_KEY_"):
-                print(f"\n{building.description}")
+        # Display pedia text if available
+        if building.pedia:
+            print(f"\n{building.pedia}")
+        elif building.description:
+            print(f"\n{building.description}")
 
         # Show costs
         if building.construction_costs:
@@ -435,21 +430,15 @@ class GameREPL:
         print(f"Category: {tech.category.value.title()}")
         print(f"Research Cost: {tech.research_cost:.0f}")
 
-        # Get description from GameText
-        if tech.description:
-            desc_tag = tech.description
-            if not desc_tag.startswith("TXT_KEY_"):
-                desc_tag = f"TXT_KEY_TECH_{tech.description}_PEDIA"
+        # Display quote if available
+        if tech.quote:
+            print(f"\nQuote: {tech.quote}")
 
-            pedia_text = self.game_data.technologies_text.get(desc_tag)
-
-            if pedia_text:
-                import re
-                # Replace [PARAGRAPH:x] tags with double line breaks
-                formatted_text = re.sub(r'\[PARAGRAPH:\d+\]', '\n\n', pedia_text)
-                print(f"\n{formatted_text}")
-            elif tech.description and not tech.description.startswith("TXT_KEY_"):
-                print(f"\n{tech.description}")
+        # Display pedia text if available
+        if tech.pedia:
+            print(f"\n{tech.pedia}")
+        elif tech.description:
+            print(f"\n{tech.description}")
 
         # Show prerequisites
         if tech.prerequisites:
@@ -783,6 +772,16 @@ class GameREPL:
                 city_available_resources=city_resources
             ):
                 available.append(building_def)
+
+        # Sort by production cost (lowest to highest)
+        def get_production_cost(building_def):
+            adjusted_costs = self.civilization.buildings.get_adjusted_costs(building_def.id)
+            for cost in adjusted_costs:
+                if cost.resource_id == "production":
+                    return cost.amount
+            return 0.0
+
+        available.sort(key=get_production_cost)
 
         if available:
             print(f"\n--- Available to Build ({len(available)}) ---")
@@ -1152,6 +1151,10 @@ class GameREPL:
     def cleanup(self):
         self.game_loop.stop()
 
+        # Restore terminal state
+        print("\033[?25h", end="", flush=True)    # Show cursor
+        print("\033[?1049l", end="", flush=True)  # Exit alternate screen
+
         if self.old_terminal_settings and sys.stdin.isatty():
             try:
                 termios.tcsetattr(
@@ -1173,15 +1176,9 @@ class GameREPL:
         lines = []
         lines.append(f"🎓 Technology completed: {tech.name}!")
 
-        # Get quote text for technology
-        quote_tag = f"TXT_KEY_TECH_{tech.id.upper()}_QUOTE"
-        quote_text = self.game_data.technologies_text.get(quote_tag)
-        if quote_text:
-            import re
-            # Replace paragraph tags with line breaks and [SPACE][SPACE] with two spaces
-            formatted_quote = re.sub(r'\[PARAGRAPH:\d+\]', '\n   ', quote_text)
-            formatted_quote = re.sub(r'\[SPACE\]\[SPACE\]', '  ', formatted_quote)
-            lines.append(f"   {formatted_quote}")
+        # Display quote if available
+        if tech.quote:
+            lines.append(f"   {tech.quote}")
 
         # Show what this tech unlocks
         unlocks = []
@@ -1232,14 +1229,10 @@ class GameREPL:
         lines.append(f"🏗️  Building completed: {building.name}!")
 
         # Get first sentence of pedia text as brief description
-        desc_tag = f"TXT_KEY_BUILDING_{building.id.upper()}_PEDIA"
-        pedia_text = self.game_data.buildings_text.get(desc_tag)
-        if pedia_text:
+        if building.pedia:
             import re
-            # Clean up paragraph tags and get first sentence
-            clean_text = re.sub(r'\[PARAGRAPH:\d+\]', ' ', pedia_text)
-            # Find first sentence (up to period, question mark, or exclamation)
-            first_sentence = re.split(r'[.!?]\s', clean_text, 1)[0] + '.'
+            # Get first sentence (up to period, question mark, or exclamation)
+            first_sentence = re.split(r'[.!?]\s', building.pedia, 1)[0] + '.'
             if len(first_sentence) > 200:  # Truncate if too long
                 first_sentence = first_sentence[:197] + '...'
             lines.append(f"   {first_sentence}")

@@ -1,111 +1,1477 @@
 {
-  "wheat": {
-    "name": "Wheat",
-    "description": "A nutritious grain crop that thrives in temperate climates.",
-    "category": "food",
-    "bonus_class": "crop",
-    "can_store": true,
-    "base_storage_cap": 100.0,
-    "tech_reveal": "gathering",
-    "compatible_terrains": ["grassland", "plains"]
-  },
-
   "barley": {
     "name": "Barley",
-    "description": "A hardy grain that grows in diverse conditions.",
-    "category": "food",
+    "description": "Barley resource.",
     "bonus_class": "crop",
     "can_store": true,
     "base_storage_cap": 100.0,
     "tech_reveal": "gathering",
-    "compatible_terrains": ["grassland", "plains"]
+    "compatible_terrains": ["plains", "grassland"]
   },
-
   "corn": {
     "name": "Corn",
-    "description": "A staple crop native to the Americas.",
-    "category": "food",
+    "description": "Corn resource.",
     "bonus_class": "crop",
     "can_store": true,
     "base_storage_cap": 100.0,
     "tech_reveal": "gathering",
     "compatible_terrains": ["grassland", "lush"]
   },
-
-  "berries": {
-    "name": "Berries",
-    "description": "Wild berries providing quick sustenance.",
-    "category": "food",
+  "melons": {
+    "name": "Melons",
+    "description": "Melons resource.",
     "bonus_class": "crop",
     "can_store": true,
-    "base_storage_cap": 50.0,
-    "tech_reveal": "scavenging",
-    "compatible_terrains": ["forest", "grassland"]
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["marsh"]
   },
-
-  "stone": {
-    "name": "Stone",
-    "description": "Hard rock suitable for tools and construction.",
-    "category": "strategic",
-    "bonus_class": "production",
+  "potatoes": {
+    "name": "Potatoes",
+    "description": "Potatoes resource.",
+    "bonus_class": "crop",
     "can_store": true,
-    "base_storage_cap": 200.0,
-    "tech_reveal": "scavenging",
-    "compatible_terrains": ["hills", "mountains", "rocky"]
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": [
+      "grassland",
+      "lush",
+      "muddy",
+      "plains",
+      "rocky",
+      "taiga"
+    ]
   },
-
-  "wood": {
-    "name": "Wood",
-    "description": "Timber from forests, essential for building.",
-    "category": "strategic",
-    "bonus_class": "production",
+  "pumpkin": {
+    "name": "Pumpkin",
+    "description": "Pumpkin resource.",
+    "bonus_class": "crop",
     "can_store": true,
-    "base_storage_cap": 150.0,
-    "tech_reveal": "scavenging",
-    "compatible_terrains": ["forest", "jungle"]
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["lush", "grassland", "plains"]
   },
-
-  "flint": {
-    "name": "Flint",
-    "description": "A hard stone that can be shaped into sharp tools.",
-    "category": "strategic",
+  "rice": {
+    "name": "Rice",
+    "description": "Rice resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["lush", "muddy", "marsh"]
+  },
+  "squash": {
+    "name": "Squash",
+    "description": "Squash resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["grassland", "plains"]
+  },
+  "wheat": {
+    "name": "Wheat",
+    "description": "Wheat resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["grassland"]
+  },
+  "almonds": {
+    "name": "Almonds",
+    "description": "Almonds resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["plains"]
+  },
+  "apple": {
+    "name": "Apple",
+    "description": "Apple resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering"
+  },
+  "banana": {
+    "name": "Banana",
+    "description": "Banana resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering"
+  },
+  "coconut": {
+    "name": "Coconut",
+    "description": "Coconut resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["lush"]
+  },
+  "dates": {
+    "name": "Dates",
+    "description": "Dates resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["plains", "scrub"]
+  },
+  "fig": {
+    "name": "Fig",
+    "description": "Fig resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["grassland", "plains"]
+  },
+  "guavas": {
+    "name": "Guavas",
+    "description": "Guavas resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["lush"]
+  },
+  "lemons": {
+    "name": "Lemons",
+    "description": "Lemons resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["lush"]
+  },
+  "mango": {
+    "name": "Mango",
+    "description": "Mango resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["lush"]
+  },
+  "papaya": {
+    "name": "Papaya",
+    "description": "Papaya resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["lush"]
+  },
+  "pistachio": {
+    "name": "Pistachio",
+    "description": "Pistachio resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["plains", "scrub"]
+  },
+  "pomegranate": {
+    "name": "Pomegranate",
+    "description": "Pomegranate resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["plains", "scrub"]
+  },
+  "olives": {
+    "name": "Olives",
+    "description": "Olives resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering"
+  },
+  "resin": {
+    "name": "Resin",
+    "description": "Resin resource.",
     "bonus_class": "production",
     "can_store": true,
     "base_storage_cap": 100.0,
-    "tech_reveal": "tool_making",
-    "compatible_terrains": ["hills", "rocky", "grassland"]
+    "tech_reveal": "gathering"
   },
-
-  "clay": {
-    "name": "Clay",
-    "description": "Malleable earth useful for pottery and construction.",
-    "category": "strategic",
+  "rubber": {
+    "name": "Rubber",
+    "description": "Rubber resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering"
+  },
+  "spices": {
+    "name": "Spices",
+    "description": "Spices resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": [
+      "grassland",
+      "marsh",
+      "plains",
+      "scrub",
+      "lush",
+      "muddy"
+    ]
+  },
+  "hemp": {
+    "name": "Hemp",
+    "description": "Hemp resource.",
     "bonus_class": "production",
     "can_store": true,
     "base_storage_cap": 100.0,
     "tech_reveal": "gathering",
-    "compatible_terrains": ["river", "marsh", "grassland"]
+    "compatible_terrains": ["plains", "scrub"]
   },
-
-  "fish": {
-    "name": "Fish",
-    "description": "Aquatic creatures providing protein.",
-    "category": "food",
-    "bonus_class": "crop",
-    "can_store": true,
-    "base_storage_cap": 75.0,
-    "tech_reveal": "scavenging",
-    "compatible_terrains": ["coast", "river", "lake"]
-  },
-
-  "fur": {
-    "name": "Fur",
-    "description": "Animal pelts for warmth and trade.",
-    "category": "luxury",
+  "coca": {
+    "name": "Coca",
+    "description": "Coca resource.",
     "bonus_class": "luxury",
     "can_store": true,
-    "base_storage_cap": 50.0,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["lush"]
+  },
+  "cocoa": {
+    "name": "Cocoa",
+    "description": "Cocoa resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["lush"]
+  },
+  "coffee": {
+    "name": "Coffee",
+    "description": "Coffee resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["plains"]
+  },
+  "cotton": {
+    "name": "Cotton",
+    "description": "Cotton resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["plains"]
+  },
+  "flax": {
+    "name": "Flax",
+    "description": "Flax resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["grassland", "lush", "marsh", "muddy"]
+  },
+  "henna": {
+    "name": "Henna",
+    "description": "Henna resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["grassland", "plains", "scrub"]
+  },
+  "incense": {
+    "name": "Incense",
+    "description": "Incense resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering"
+  },
+  "indigo": {
+    "name": "Indigo",
+    "description": "Indigo resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering"
+  },
+  "kava": {
+    "name": "Kava",
+    "description": "Kava resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering"
+  },
+  "papyrus": {
+    "name": "Papyrus",
+    "description": "Papyrus resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering"
+  },
+  "peyote": {
+    "name": "Peyote",
+    "description": "Peyote resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["scrub"]
+  },
+  "prickly_pear": {
+    "name": "Prickly Pear",
+    "description": "Prickly Pear resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["scrub"]
+  },
+  "opium": {
+    "name": "Opium",
+    "description": "Opium resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["grassland", "plains", "scrub"]
+  },
+  "sugar": {
+    "name": "Sugar",
+    "description": "Sugar resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["marsh", "muddy", "lush"]
+  },
+  "tea": {
+    "name": "Tea",
+    "description": "Tea resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering"
+  },
+  "tobacco": {
+    "name": "Tobacco",
+    "description": "Tobacco resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["lush"]
+  },
+  "vanilla": {
+    "name": "Vanilla",
+    "description": "Vanilla resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering"
+  },
+  "grapes": {
+    "name": "Grapes",
+    "description": "Grapes resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": ["grassland", "plains", "lush", "scrub"]
+  },
+  "mushrooms": {
+    "name": "Mushrooms",
+    "description": "Mushrooms resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering"
+  },
+  "prime_timber": {
+    "name": "Prime Timber",
+    "description": "Prime Timber resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering"
+  },
+  "camel": {
+    "name": "Camel",
+    "description": "Camel resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
     "tech_reveal": "scavenging",
-    "compatible_terrains": ["tundra", "snow", "forest"]
+    "compatible_terrains": ["scrub"]
+  },
+  "cow": {
+    "name": "Cow",
+    "description": "Cow resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["lush", "grassland"]
+  },
+  "donkey": {
+    "name": "Donkey",
+    "description": "Donkey resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["plains"]
+  },
+  "horse": {
+    "name": "Horse",
+    "description": "Horse resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["lush", "grassland", "plains", "taiga"]
+  },
+  "llama": {
+    "name": "Llama",
+    "description": "Llama resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["scrub", "barren", "desert", "rocky", "badland"]
+  },
+  "pig": {
+    "name": "Pig",
+    "description": "Pig resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging"
+  },
+  "sheep": {
+    "name": "Sheep",
+    "description": "Sheep resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["grassland", "plains", "rocky", "scrub"]
+  },
+  "beavers": {
+    "name": "Beavers",
+    "description": "Beavers resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging"
+  },
+  "bison": {
+    "name": "Bison",
+    "description": "Bison resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["grassland", "plains", "scrub", "lush"]
+  },
+  "deer": {
+    "name": "Deer",
+    "description": "Deer resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging"
+  },
+  "elephants": {
+    "name": "Elephants",
+    "description": "Elephants resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["lush", "grassland"]
+  },
+  "guinea_pigs": {
+    "name": "Guinea Pigs",
+    "description": "Guinea Pigs resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["rocky", "lush", "plains", "grassland"]
+  },
+  "kangaroo": {
+    "name": "Kangaroo",
+    "description": "Kangaroo resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["grassland", "marsh", "plains", "scrub", "rocky"]
+  },
+  "mammoth": {
+    "name": "Mammoth",
+    "description": "Mammoth resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["taiga", "tundra", "permafrost", "ice"]
+  },
+  "parrots": {
+    "name": "Parrots",
+    "description": "Parrots resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging"
+  },
+  "poultry": {
+    "name": "Poultry",
+    "description": "Poultry resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["grassland", "plains", "taiga", "lush", "marsh"]
+  },
+  "rabbit": {
+    "name": "Rabbit",
+    "description": "Rabbit resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": [
+      "desert",
+      "scrub",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga"
+    ]
+  },
+  "sea_lion_and_seal": {
+    "name": "Sea Lion And Seal",
+    "description": "Sea Lion And Seal resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": [
+      "ice",
+      "tundra",
+      "permafrost",
+      "taiga",
+      "rocky",
+      "jagged",
+      "barren"
+    ]
+  },
+  "walrus": {
+    "name": "Walrus",
+    "description": "Walrus resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scavenging",
+    "compatible_terrains": ["ice", "tundra", "permafrost", "taiga"]
+  },
+  "clam": {
+    "name": "Clam",
+    "description": "Clam resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "trap_fishing",
+    "compatible_terrains": [
+      "coast",
+      "coast_tropical",
+      "sea",
+      "sea_tropical",
+      "lake_shore"
+    ]
+  },
+  "crab": {
+    "name": "Crab",
+    "description": "Crab resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "trap_fishing",
+    "compatible_terrains": [
+      "coast",
+      "coast_polar",
+      "coast_tropical",
+      "sea",
+      "sea_polar",
+      "sea_tropical",
+      "lake_shore",
+      "lake"
+    ]
+  },
+  "fish": {
+    "name": "Fish",
+    "description": "Fish resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "trap_fishing",
+    "compatible_terrains": [
+      "coast",
+      "coast_polar",
+      "coast_tropical",
+      "sea",
+      "sea_polar",
+      "sea_tropical",
+      "sea_deep",
+      "sea_deep_polar",
+      "sea_deep_tropical",
+      "ocean",
+      "ocean_polar",
+      "ocean_tropical",
+      "lake_shore",
+      "lake"
+    ]
+  },
+  "lobster": {
+    "name": "Lobster",
+    "description": "Lobster resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "trap_fishing",
+    "compatible_terrains": [
+      "coast",
+      "coast_polar",
+      "coast_tropical",
+      "sea",
+      "sea_polar",
+      "sea_tropical",
+      "sea_deep",
+      "sea_deep_polar",
+      "sea_deep_tropical",
+      "ocean",
+      "ocean_polar",
+      "ocean_tropical"
+    ]
+  },
+  "murex": {
+    "name": "Murex",
+    "description": "Murex resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "trap_fishing",
+    "compatible_terrains": ["coast", "coast_tropical", "sea", "sea_tropical"]
+  },
+  "pearls": {
+    "name": "Pearls",
+    "description": "Pearls resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "trap_fishing",
+    "compatible_terrains": [
+      "coast",
+      "coast_polar",
+      "coast_tropical",
+      "sea",
+      "sea_polar",
+      "sea_tropical",
+      "lake_shore",
+      "lake"
+    ]
+  },
+  "shrimp": {
+    "name": "Shrimp",
+    "description": "Shrimp resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "trap_fishing",
+    "compatible_terrains": [
+      "coast",
+      "coast_polar",
+      "coast_tropical",
+      "sea",
+      "sea_polar",
+      "sea_tropical",
+      "sea_deep",
+      "sea_deep_polar",
+      "sea_deep_tropical",
+      "ocean",
+      "ocean_polar",
+      "ocean_tropical",
+      "lake_shore",
+      "lake"
+    ]
+  },
+  "whale": {
+    "name": "Whale",
+    "description": "Whale resource.",
+    "bonus_class": "crop",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "trap_fishing",
+    "compatible_terrains": [
+      "sea_deep",
+      "sea_deep_polar",
+      "sea_deep_tropical",
+      "ocean",
+      "ocean_polar",
+      "ocean_tropical",
+      "trench",
+      "trench_polar",
+      "trench_tropical"
+    ]
+  },
+  "silk": {
+    "name": "Silk",
+    "description": "Silk resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering"
+  },
+  "amber": {
+    "name": "Amber",
+    "description": "Amber resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "barter",
+    "compatible_terrains": ["plains", "grassland", "lush", "taiga"]
+  },
+  "bauxite_ore": {
+    "name": "Bauxite Ore",
+    "description": "Bauxite Ore resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "industrialism",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "muddy",
+      "marsh",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "coal": {
+    "name": "Coal",
+    "description": "Coal resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "coal_mining",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "copper_ore": {
+    "name": "Copper Ore",
+    "description": "Copper Ore resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "soft_hammer_percussion",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "diamond": {
+    "name": "Diamond",
+    "description": "Diamond resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "mining",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "geode": {
+    "name": "Geode",
+    "description": "Geode resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "geology",
+    "compatible_terrains": ["rocky", "badland", "jagged"]
+  },
+  "gold_ore": {
+    "name": "Gold Ore",
+    "description": "Gold Ore resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "soft_hammer_percussion",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "iron_ore": {
+    "name": "Iron Ore",
+    "description": "Iron Ore resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "mining",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "lead_ore": {
+    "name": "Lead Ore",
+    "description": "Lead Ore resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "mining",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "manganese": {
+    "name": "Manganese",
+    "description": "Manganese resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "geology",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "platinum_ore": {
+    "name": "Platinum Ore",
+    "description": "Platinum Ore resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "metal_casting",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "rubies": {
+    "name": "Rubies",
+    "description": "Rubies resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "mining",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "sapphires": {
+    "name": "Sapphires",
+    "description": "Sapphires resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "mining",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "silver_ore": {
+    "name": "Silver Ore",
+    "description": "Silver Ore resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "soft_hammer_percussion",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "sulphur": {
+    "name": "Sulphur",
+    "description": "Sulphur resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "mining",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga"
+    ]
+  },
+  "tin_ore": {
+    "name": "Tin Ore",
+    "description": "Tin Ore resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "soft_hammer_percussion",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "titanium_ore": {
+    "name": "Titanium Ore",
+    "description": "Titanium Ore resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "advanced_metallurgy",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "uranium": {
+    "name": "Uranium",
+    "description": "Uranium resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "quantum_physics",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "salt_flats",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "fine_clay": {
+    "name": "Fine Clay",
+    "description": "Fine Clay resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "natural_pigments",
+    "compatible_terrains": ["lush", "muddy", "marsh"]
+  },
+  "jade": {
+    "name": "Jade",
+    "description": "Jade resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "soft_hammer_percussion",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "marble": {
+    "name": "Marble",
+    "description": "Marble resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "hard_hammer_percussion",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra"
+    ]
+  },
+  "natron": {
+    "name": "Natron",
+    "description": "Natron resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "masonry",
+    "compatible_terrains": ["salt_flats"]
+  },
+  "obsidian": {
+    "name": "Obsidian",
+    "description": "Obsidian resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra"
+    ]
+  },
+  "salt": {
+    "name": "Salt",
+    "description": "Salt resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "soft_hammer_percussion",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "salt_flats",
+      "plains"
+    ]
+  },
+  "stone": {
+    "name": "Stone",
+    "description": "Stone resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "gathering",
+    "compatible_terrains": [
+      "barren",
+      "rocky",
+      "badland",
+      "jagged",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland",
+      "lush",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "turquoise": {
+    "name": "Turquoise",
+    "description": "Turquoise resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "barter",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "plains",
+      "grassland"
+    ]
+  },
+  "fossil_beds": {
+    "name": "Fossil Beds",
+    "description": "Fossil Beds resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "geology",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "salt_flats",
+      "plains",
+      "grassland",
+      "lush",
+      "muddy",
+      "marsh",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "hydrothermal_vent": {
+    "name": "Hydrothermal Vent",
+    "description": "Hydrothermal Vent resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "volcanology",
+    "compatible_terrains": [
+      "sea",
+      "sea_polar",
+      "sea_tropical",
+      "sea_deep",
+      "sea_deep_polar",
+      "sea_deep_tropical",
+      "ocean",
+      "ocean_polar",
+      "ocean_tropical",
+      "trench",
+      "trench_polar",
+      "trench_tropical",
+      "lake"
+    ]
+  },
+  "methane_ice": {
+    "name": "Methane Ice",
+    "description": "Methane Ice resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "modern_seismology",
+    "compatible_terrains": [
+      "sea",
+      "sea_polar",
+      "sea_tropical",
+      "sea_deep",
+      "sea_deep_polar",
+      "sea_deep_tropical",
+      "ocean",
+      "ocean_polar",
+      "ocean_tropical",
+      "trench",
+      "trench_polar",
+      "trench_tropical",
+      "lake"
+    ]
+  },
+  "natural_gas": {
+    "name": "Natural Gas",
+    "description": "Natural Gas resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scientific_method",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "salt_flats",
+      "plains",
+      "grassland",
+      "lush",
+      "muddy",
+      "marsh",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice",
+      "sea",
+      "sea_polar",
+      "sea_tropical",
+      "sea_deep",
+      "sea_deep_polar",
+      "sea_deep_tropical",
+      "ocean",
+      "ocean_polar",
+      "ocean_tropical",
+      "lake_shore",
+      "lake"
+    ]
+  },
+  "oil": {
+    "name": "Oil",
+    "description": "Oil resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "scientific_method",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "salt_flats",
+      "plains",
+      "grassland",
+      "lush",
+      "muddy",
+      "marsh",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice",
+      "sea",
+      "sea_polar",
+      "sea_tropical",
+      "sea_deep",
+      "sea_deep_polar",
+      "sea_deep_tropical",
+      "ocean",
+      "ocean_polar",
+      "ocean_tropical",
+      "lake"
+    ]
+  },
+  "geothermal_energy": {
+    "name": "Geothermal Energy",
+    "description": "Geothermal Energy resource.",
+    "bonus_class": "production",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "modern_seismology",
+    "compatible_terrains": [
+      "rocky",
+      "badland",
+      "jagged",
+      "barren",
+      "desert",
+      "scrub",
+      "dunes",
+      "salt_flats",
+      "plains",
+      "grassland",
+      "lush",
+      "muddy",
+      "marsh",
+      "taiga",
+      "tundra",
+      "permafrost",
+      "ice"
+    ]
+  },
+  "ancient_relics": {
+    "name": "Ancient Relics",
+    "description": "Ancient Relics resource.",
+    "bonus_class": "luxury",
+    "can_store": true,
+    "base_storage_cap": 100.0,
+    "tech_reveal": "archeology",
+    "compatible_terrains": ["desert", "marsh", "dunes"]
   }
 }

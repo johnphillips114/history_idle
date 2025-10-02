@@ -32,6 +32,8 @@ class TechnologyDefinition:
     era: Era
     category: TechCategory
     research_cost: float
+    quote: Optional[str] = None
+    pedia: Optional[str] = None
     prerequisites: list[str] = field(default_factory=list)
     unlocks_buildings: list[str] = field(default_factory=list)
     unlocks_resources: list[str] = field(default_factory=list)

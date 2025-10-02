@@ -56,6 +56,7 @@ class GameDataLoader:
                 id=building_id,
                 name=building_data["name"],
                 description=building_data.get("description", ""),
+                pedia=building_data.get("pedia"),
                 category=category,
                 construction_costs=construction_costs,
                 construction_time=building_data.get("construction_time", 0.0),
@@ -94,6 +95,8 @@ class GameDataLoader:
                 era=era,
                 category=TechCategory.SCIENTIFIC,  # Default category
                 research_cost=tech_data.get("research_cost", 100.0),
+                quote=tech_data.get("quote"),
+                pedia=tech_data.get("pedia"),
                 prerequisites=tech_data.get("prerequisites", []),
                 effects=tech_data.get("effects", {}),
             )
