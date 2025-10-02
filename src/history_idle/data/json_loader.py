@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -10,8 +11,11 @@ from ..models.civilization_definition import CivilizationDefinition
 
 
 class GameDataLoader:
+    """Loads game data from JSON files."""
+
     def __init__(self, data_dir: Optional[str] = None):
         if data_dir is None:
+            # Default to data/game/ in the project root
             current_file = Path(__file__)
             project_root = current_file.parent.parent.parent.parent
             data_dir = project_root / "data" / "game"
@@ -19,30 +23,35 @@ class GameDataLoader:
         self.data_dir = Path(data_dir)
 
     def _load_json(self, filename: str) -> dict:
+        """Load a JSON file from the data directory."""
         filepath = self.data_dir / filename
         if not filepath.exists():
             raise FileNotFoundError(f"Data file not found: {filepath}")
 
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             return json.load(f)
 
     def load_buildings(self) -> dict[str, BuildingDefinition]:
+        """Load buildings from buildings.json."""
         data = self._load_json("buildings.json")
         buildings = {}
 
         for building_id, building_data in data.items():
+            # Parse construction costs
             construction_costs = []
             if building_data.get("construction_cost"):
                 construction_costs.append(
                     ResourceCost("production", building_data["construction_cost"])
                 )
 
+            # Parse category
             category_str = building_data.get("category", "infrastructure")
             try:
                 category = BuildingCategory(category_str)
             except ValueError:
                 category = BuildingCategory.INFRASTRUCTURE
 
+            # Create building definition
             building = BuildingDefinition(
                 id=building_id,
                 name=building_data["name"],
@@ -66,16 +75,19 @@ class GameDataLoader:
         return buildings
 
     def load_technologies(self) -> dict[str, TechnologyDefinition]:
+        """Load technologies from technologies.json."""
         data = self._load_json("technologies.json")
         technologies = {}
 
         for tech_id, tech_data in data.items():
+            # Parse era
             era_str = tech_data.get("era", "paleolithic")
             try:
                 era = Era(era_str)
             except ValueError:
                 era = Era.PALEOLITHIC
 
+            # Create technology definition
             tech = TechnologyDefinition(
                 id=tech_id,
                 name=tech_data["name"],
@@ -94,16 +106,19 @@ class GameDataLoader:
         return technologies
 
     def load_resources(self) -> dict[str, ResourceType]:
+        """Load resources from resources.json."""
         data = self._load_json("resources.json")
         resources = {}
 
         for resource_id, resource_data in data.items():
+            # Parse category
             category_str = resource_data.get("category", "strategic")
             try:
                 category = ResourceCategory(category_str)
             except ValueError:
                 category = ResourceCategory.STRATEGIC
 
+            # Create resource type
             resource = ResourceType(
                 id=resource_id,
                 name=resource_data["name"],
@@ -121,6 +136,7 @@ class GameDataLoader:
         return resources
 
     def load_terrains(self) -> dict[str, TerrainType]:
+        """Load terrains from terrains.json."""
         data = self._load_json("terrains.json")
         terrains = {}
 
@@ -142,29 +158,39 @@ class GameDataLoader:
         return terrains
 
     def load_text_data(self) -> dict[str, dict[str, str]]:
+        """
+        Load text data for buildings and technologies.
+        Returns a dict with 'buildings_text' and 'technologies_text'.
+        """
         buildings_data = self._load_json("buildings.json")
         technologies_data = self._load_json("technologies.json")
 
         buildings_text = {}
         technologies_text = {}
 
+        # Build text mappings similar to C2C GameText format
         for building_id, building_data in buildings_data.items():
+            # PEDIA text
             pedia_key = f"TXT_KEY_BUILDING_{building_id.upper()}_PEDIA"
             if building_data.get("pedia"):
                 buildings_text[pedia_key] = building_data["pedia"]
 
+            # Quote text (if exists)
             quote_key = f"TXT_KEY_BUILDING_{building_id.upper()}_QUOTE"
             if building_data.get("quote"):
                 buildings_text[quote_key] = building_data["quote"]
 
         for tech_id, tech_data in technologies_data.items():
+            # Name
             name_key = f"TXT_KEY_TECH_{tech_id.upper()}"
             technologies_text[name_key] = tech_data["name"]
 
+            # PEDIA text
             pedia_key = f"TXT_KEY_TECH_{tech_id.upper()}_PEDIA"
             if tech_data.get("pedia"):
                 technologies_text[pedia_key] = tech_data["pedia"]
 
+            # Quote text
             quote_key = f"TXT_KEY_TECH_{tech_id.upper()}_QUOTE"
             if tech_data.get("quote"):
                 technologies_text[quote_key] = tech_data["quote"]
@@ -175,9 +201,11 @@ class GameDataLoader:
         }
 
     def load_civilizations(self) -> dict[str, CivilizationDefinition]:
+        """Load civilization definitions from civilizations.json."""
         data = self._load_json("civilizations.json")
         civilizations = {}
 
+        # Extract the civilizations section
         civs_data = data.get("civilizations", {})
 
         for civ_id, civ_data in civs_data.items():
@@ -186,7 +214,7 @@ class GameDataLoader:
                 name=civ_data["name"],
                 city_names=civ_data.get("city_names", []),
                 leaders=civ_data.get("leaders", []),
-                derivative_civ=civ_data.get("derivative_civ", ""),
+                derivative_civ=civ_data.get("derivative_civ", "")
             )
 
             civilizations[civ_id] = civ
@@ -194,4 +222,5 @@ class GameDataLoader:
         return civilizations
 
     def load_civilization_data(self) -> dict:
+        """Load civilization configuration data."""
         return self._load_json("civilizations.json")

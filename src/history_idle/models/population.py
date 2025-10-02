@@ -58,7 +58,8 @@ class Population:
 
     @property
     def food_for_growth_capacity(self) -> float:
-        return self.food_growth_base * (self.total**self.food_growth_exponent)
+        """Calculate exponentially scaling food capacity needed for next population."""
+        return self.food_growth_base * (self.total ** self.food_growth_exponent)
 
     def get_allocation(
         self,
@@ -135,6 +136,7 @@ class Population:
         )
 
     def _deallocate_one_worker(self) -> bool:
+        """Deallocate one worker from any task. Returns True if a worker was deallocated."""
         for allocation in self.allocations:
             if allocation.count > 0:
                 allocation.count -= 1
@@ -144,31 +146,47 @@ class Population:
         return False
 
     def update_growth(self, delta_time: float, food_surplus: float) -> int:
+        """
+        Update population based on food accumulation.
+        Accumulates food surplus; grows when capacity reached, shrinks when food depleted.
+        Handles overflow - excess food carries over to next growth threshold.
+        """
+        # Accumulate food surplus (can be positive or negative)
         self.food_for_growth += food_surplus
 
         total_growth = 0
 
+        # Check for population growth (loop to handle multiple growths in one tick)
         while self.food_for_growth >= self.food_for_growth_capacity and self.can_grow:
+            # Calculate overflow before growing
             overflow = self.food_for_growth - self.food_for_growth_capacity
             self.total += 1
             total_growth += 1
+            # Carry overflow to next growth cycle
             self.food_for_growth = overflow
 
+        # If at housing capacity, cap food accumulation at the growth threshold
         if not self.can_grow and self.food_for_growth > self.food_for_growth_capacity:
             self.food_for_growth = self.food_for_growth_capacity
 
+        # Check for population decline (starvation) - max 1 per tick
+        # Population cannot drop below 10
         if self.food_for_growth <= 0.0 and self.total > 10:
             self.total -= 1
+            # Deallocate one worker from any task
             self._deallocate_one_worker()
+            # Set food to the new capacity for the reduced population
             self.food_for_growth = self.food_for_growth_capacity
             return -1
 
+        # If at minimum population (10), prevent food from going negative
         if self.total <= 10 and self.food_for_growth < 0.0:
             self.food_for_growth = 0.0
 
         return total_growth
 
     def update_happiness(self) -> None:
+        """Update happiness based on various factors."""
         base_happiness = 0.5
 
         if self.is_overcrowded:
