@@ -40,8 +40,8 @@ class City:
             id="food",
             name="Food",
             category=ResourceCategory.ABSTRACT,
-            description="Total food from all crop resources",
-            base_storage_cap=0.0,
+            description="Food produced from crop resources and buildings",
+            base_storage_cap=100.0,
             can_store=True,
         )
         self.resources.add_resource_type(food_type, initial_amount=0.0)
@@ -172,14 +172,9 @@ class City:
                     self.tiles.append(tile)
 
     def get_total_food_from_crops(self) -> float:
-        total = 0.0
-        for resource_qty in self.resources.resources.values():
-            if (
-                hasattr(resource_qty.resource_type, "bonus_class")
-                and resource_qty.resource_type.bonus_class == "crop"
-            ):
-                total += resource_qty.amount
-        return total
+        """Returns total food amount. Kept for backwards compatibility."""
+        food_resource = self.resources.get("food")
+        return food_resource.amount if food_resource else 0.0
 
     def generate_tiles(
         self, all_terrains: dict, all_resources: dict, count: int = 3
@@ -224,10 +219,8 @@ class City:
             "resource_changes": {},
         }
 
-        total_crop_production = 0.0
-        total_crop_production_rate = 0.0
-        growth_flavor_bonus = self._get_flavor_bonus("growth")
-
+        # Calculate food production from workers on crops
+        food_production_rate = 0.0
         for resource_qty in self.resources.resources.values():
             if (
                 hasattr(resource_qty.resource_type, "bonus_class")
@@ -240,85 +233,33 @@ class City:
                     crop_production_rate = (
                         crop_workers * 2.0 * self.population.happiness
                     )
-                    resource_qty.production_rate = crop_production_rate
-                    total_crop_production_rate += crop_production_rate
-                    crop_production = crop_production_rate * delta_time
-                    added = resource_qty.add(crop_production)
-                    total_crop_production += added
-                    update_summary["resource_changes"][
-                        resource_qty.resource_type.id
-                    ] = added
-                else:
-                    resource_qty.production_rate = 0.0
+                    food_production_rate += crop_production_rate
 
-        if growth_flavor_bonus > 0:
-            crop_resources = [
-                rq
-                for rq in self.resources.resources.values()
-                if hasattr(rq.resource_type, "bonus_class")
-                and rq.resource_type.bonus_class == "crop"
-            ]
-            if crop_resources:
-                bonus_per_crop = growth_flavor_bonus / len(crop_resources)
-                for resource_qty in crop_resources:
-                    bonus_production = bonus_per_crop * delta_time
-                    added = resource_qty.add(bonus_production)
-                    total_crop_production += added
-                    if (
-                        resource_qty.resource_type.id
-                        in update_summary["resource_changes"]
-                    ):
-                        update_summary["resource_changes"][
-                            resource_qty.resource_type.id
-                        ] += added
-                    else:
-                        update_summary["resource_changes"][
-                            resource_qty.resource_type.id
-                        ] = added
+        # Add growth flavor bonuses directly to food production
+        growth_flavor_bonus = self._get_flavor_bonus("growth")
+        food_production_rate += growth_flavor_bonus
 
-                total_crop_production_rate += growth_flavor_bonus
-
-        total_food = self.get_total_food_from_crops()
-        food_consumption_rate = self.population.calculate_food_consumption()
-        food_consumption = food_consumption_rate * delta_time
-        # Calculate surplus based on production RATE (not storage) for population growth
-        # This ensures growth isn't blocked by full storage
-        food_production_this_tick = total_crop_production_rate * delta_time
-        food_surplus = food_production_this_tick - food_consumption
-
-        if total_food > 0 and food_consumption > 0:
-            for resource_qty in self.resources.resources.values():
-                if (
-                    hasattr(resource_qty.resource_type, "bonus_class")
-                    and resource_qty.resource_type.bonus_class == "crop"
-                ):
-                    if resource_qty.amount > 0:
-                        proportion = resource_qty.amount / total_food
-                        consumption_from_this_crop = food_consumption * proportion
-                        resource_qty.consumption_rate = (
-                            consumption_from_this_crop / delta_time
-                            if delta_time > 0
-                            else 0
-                        )
-                        resource_qty.remove(consumption_from_this_crop)
-
+        # Get food resource and update it
         food_resource = self.resources.get("food")
+        food_consumption_rate = self.population.calculate_food_consumption()
+
         if food_resource:
-            total_food_amount = 0.0
-            total_food_capacity = 0.0
-
-            for resource_qty in self.resources.resources.values():
-                if (
-                    hasattr(resource_qty.resource_type, "bonus_class")
-                    and resource_qty.resource_type.bonus_class == "crop"
-                ):
-                    total_food_amount += resource_qty.amount
-                    total_food_capacity += resource_qty.capacity
-
-            food_resource.amount = total_food_amount
-            food_resource.capacity = total_food_capacity
-            food_resource.production_rate = total_crop_production_rate
+            food_resource.production_rate = food_production_rate
             food_resource.consumption_rate = food_consumption_rate
+
+            # Add production and remove consumption
+            food_production_this_tick = food_production_rate * delta_time
+            food_consumption_this_tick = food_consumption_rate * delta_time
+
+            food_resource.add(food_production_this_tick)
+            food_resource.remove(food_consumption_this_tick)
+
+            update_summary["resource_changes"]["food"] = (
+                food_production_this_tick - food_consumption_this_tick
+            )
+
+        # Calculate food surplus for population growth
+        food_surplus = (food_production_rate - food_consumption_rate) * delta_time
 
         population_change = self.population.update_growth(delta_time, food_surplus)
         self.population.update_happiness()
