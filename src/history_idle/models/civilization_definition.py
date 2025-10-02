@@ -21,7 +21,6 @@ class CivilizationDefinition:
         return text_key
 
     def get_first_city_name(self) -> str:
-        """Get the formatted name of the first city."""
         if self.city_names:
             return self.format_city_name(self.city_names[0])
         return "Capital"  # Fallback

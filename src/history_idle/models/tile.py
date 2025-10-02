@@ -5,6 +5,7 @@ from enum import Enum
 
 class CultureLevel(Enum):
     """Culture levels and their thresholds"""
+
     NONE = 0
     POOR = 200
     FLEDGLING = 1300
@@ -18,7 +19,6 @@ class CultureLevel(Enum):
 
     @classmethod
     def get_level_for_culture(cls, culture: float) -> "CultureLevel":
-        """Get the culture level for a given culture amount"""
         levels = sorted(cls, key=lambda x: x.value, reverse=True)
         for level in levels:
             if culture >= level.value:
@@ -27,7 +27,6 @@ class CultureLevel(Enum):
 
     @classmethod
     def get_next_level(cls, current_level: "CultureLevel") -> Optional["CultureLevel"]:
-        """Get the next culture level after the current one"""
         levels = sorted(cls, key=lambda x: x.value)
         try:
             current_index = levels.index(current_level)
@@ -40,9 +39,8 @@ class CultureLevel(Enum):
 
 @dataclass
 class Tile:
-    """Represents a tile in a city's territory"""
-    terrain: "TerrainType"  # The terrain type of this tile
-    resource: Optional["ResourceType"] = None  # Optional resource on this tile
+    terrain: str  # The terrain type of this tile
+    resource: Optional[str] = None  # Optional resource on this tile
 
     def __hash__(self):
         return hash((self.terrain.id, self.resource.id if self.resource else None))

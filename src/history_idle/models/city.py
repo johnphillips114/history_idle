@@ -16,7 +16,7 @@ class City:
     population: Population = field(default_factory=Population)
     buildings: BuildingManager = field(default_factory=BuildingManager)
     available_resources: set[str] = field(default_factory=set)
-    terrain: Optional["TerrainType"] = None  # The terrain this city is built on
+    terrain: Optional[str] = None  # The terrain this city is built on
     tiles: list[Tile] = field(default_factory=list)  # Tiles controlled by this city
     culture: float = 0.0  # Current culture points
     culture_level: CultureLevel = CultureLevel.NONE  # Current culture level
@@ -109,15 +109,11 @@ class City:
     def initialize_starting_resources(
         self, all_resources: dict, all_terrains: dict, count: int = 3
     ) -> None:
-        """
-        Initialize starting resources and matching terrain tiles.
-        First picks resources, then generates tiles with compatible terrain.
-        """
         count = max(1, min(3, count))  # Clamp between 1 and 3
 
-        # Select resources (preferring production and crop types)
         production_resources = [
-            r for r in all_resources.values()
+            r
+            for r in all_resources.values()
             if r.bonus_class == "production" and r.compatible_terrains
         ]
         crop_resources = [
@@ -138,7 +134,8 @@ class City:
         remaining_slots = count - len(selected)
         if remaining_slots > 0 and all_resources:
             other_resources = [
-                r for r in all_resources.values()
+                r
+                for r in all_resources.values()
                 if r not in selected and r.compatible_terrains
             ]
             if other_resources:
@@ -148,23 +145,19 @@ class City:
                         selected.append(random_resource)
                         other_resources.remove(random_resource)
 
-        # For each selected resource, create a tile with compatible terrain
         for resource in selected:
             self.available_resources.add(resource.id)
             self.resources.add_resource_type(resource, initial_amount=0.0)
 
-            # Find a compatible terrain for this resource
             compatible_terrain_ids = resource.compatible_terrains
             if compatible_terrain_ids and all_terrains:
-                # Get actual terrain objects
                 compatible_terrains = [
-                    all_terrains[tid] for tid in compatible_terrain_ids
+                    all_terrains[tid]
+                    for tid in compatible_terrain_ids
                     if tid in all_terrains
                 ]
                 if compatible_terrains:
-                    # Pick a random compatible terrain
                     chosen_terrain = random.choice(compatible_terrains)
-                    # Create a tile with this resource
                     tile = Tile(terrain=chosen_terrain, resource=resource)
                     self.tiles.append(tile)
 
@@ -178,25 +171,24 @@ class City:
                 total += resource_qty.amount
         return total
 
-    def generate_tiles(self, all_terrains: dict, all_resources: dict, count: int = 3) -> list[Tile]:
-        """Generate new tiles for the city when culture level increases"""
+    def generate_tiles(
+        self, all_terrains: dict, all_resources: dict, count: int = 3
+    ) -> list[Tile]:
         new_tiles = []
 
-        # Get list of suitable terrains (all terrains, not just foundable ones)
         terrain_list = list(all_terrains.values())
         if not terrain_list:
             return new_tiles
 
         for _ in range(count):
-            # Select random terrain
             terrain = random.choice(terrain_list)
 
             # 50% chance to have a resource
             resource = None
             if random.random() < 0.5:
-                # Filter resources that are compatible with this terrain
                 compatible_resources = [
-                    r for r in all_resources.values()
+                    r
+                    for r in all_resources.values()
                     if terrain.id in r.compatible_terrains
                 ]
                 if compatible_resources:
@@ -275,8 +267,6 @@ class City:
         total_food = self.get_total_food_from_crops()
         food_consumption_rate = self.population.calculate_food_consumption()
         food_consumption = food_consumption_rate * delta_time
-        # Calculate surplus based on production RATE (not storage) for population growth
-        # This ensures growth isn't blocked by full storage
         food_production_this_tick = total_crop_production_rate * delta_time
         food_surplus = food_production_this_tick - food_consumption
 
@@ -320,7 +310,6 @@ class City:
 
         self._update_flavor_resources()
 
-        # Only generate production if something is under construction
         production_this_tick = 0.0
         production_resource = self.resources.get("production")
 
@@ -342,7 +331,6 @@ class City:
                 production_from_workers + production_from_flavors
             ) * delta_time
         else:
-            # No production if nothing is being built
             if production_resource:
                 production_resource.production_rate = 0.0
                 production_resource.amount = 0.0
@@ -354,12 +342,10 @@ class City:
 
         self._update_housing_capacity()
 
-        # Update culture and check for level-up
         culture_generated = self._update_culture(delta_time)
         update_summary["culture_generated"] = culture_generated
         update_summary["culture_level_up"] = False
 
-        # Check if we've reached a new culture level
         new_level = CultureLevel.get_level_for_culture(self.culture)
         if new_level != self.culture_level:
             update_summary["culture_level_up"] = True
@@ -387,7 +373,6 @@ class City:
         return float(total)
 
     def _update_culture(self, delta_time: float) -> float:
-        """Accumulate culture from buildings"""
         culture_per_second = self._get_flavor_bonus("culture")
         culture_generated = culture_per_second * delta_time
         self.culture += culture_generated
