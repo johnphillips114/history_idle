@@ -16,7 +16,7 @@ class City:
     population: Population = field(default_factory=Population)
     buildings: BuildingManager = field(default_factory=BuildingManager)
     available_resources: set[str] = field(default_factory=set)
-    terrain: Optional["TerrainType"] = None  # The terrain this city is built on
+    terrain: Optional[str] = None  # The terrain this city is built on
     tiles: list[Tile] = field(default_factory=list)  # Tiles controlled by this city
     culture: float = 0.0  # Current culture points
     culture_level: CultureLevel = CultureLevel.NONE  # Current culture level
@@ -117,7 +117,8 @@ class City:
 
         # Select resources (preferring production and crop types)
         production_resources = [
-            r for r in all_resources.values()
+            r
+            for r in all_resources.values()
             if r.bonus_class == "production" and r.compatible_terrains
         ]
         crop_resources = [
@@ -138,7 +139,8 @@ class City:
         remaining_slots = count - len(selected)
         if remaining_slots > 0 and all_resources:
             other_resources = [
-                r for r in all_resources.values()
+                r
+                for r in all_resources.values()
                 if r not in selected and r.compatible_terrains
             ]
             if other_resources:
@@ -158,7 +160,8 @@ class City:
             if compatible_terrain_ids and all_terrains:
                 # Get actual terrain objects
                 compatible_terrains = [
-                    all_terrains[tid] for tid in compatible_terrain_ids
+                    all_terrains[tid]
+                    for tid in compatible_terrain_ids
                     if tid in all_terrains
                 ]
                 if compatible_terrains:
@@ -178,7 +181,9 @@ class City:
                 total += resource_qty.amount
         return total
 
-    def generate_tiles(self, all_terrains: dict, all_resources: dict, count: int = 3) -> list[Tile]:
+    def generate_tiles(
+        self, all_terrains: dict, all_resources: dict, count: int = 3
+    ) -> list[Tile]:
         """Generate new tiles for the city when culture level increases"""
         new_tiles = []
 
@@ -196,7 +201,8 @@ class City:
             if random.random() < 0.5:
                 # Filter resources that are compatible with this terrain
                 compatible_resources = [
-                    r for r in all_resources.values()
+                    r
+                    for r in all_resources.values()
                     if terrain.id in r.compatible_terrains
                 ]
                 if compatible_resources:

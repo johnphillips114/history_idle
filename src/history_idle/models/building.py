@@ -43,8 +43,12 @@ class BuildingDefinition:
     effects: dict[str, float] = field(default_factory=dict)
     worker_slots: int = 0  # Number of workers this building can employ
     flavors: dict[str, int] = field(default_factory=dict)  # FlavorType -> iFlavor value
-    vicinity_bonus: Optional[str] = None  # Resource that must be in city vicinity (available_resources)
-    prereq_or_terrain: list[str] = field(default_factory=list)  # List of terrain IDs (city must be on one of them)
+    vicinity_bonus: Optional[str] = (
+        None  # Resource that must be in city vicinity (available_resources)
+    )
+    prereq_or_terrain: list[str] = field(
+        default_factory=list
+    )  # List of terrain IDs (city must be on one of them)
 
     def __hash__(self):
         return hash(self.id)
@@ -106,7 +110,9 @@ class BuildingManager:
     building_definitions: dict[str, BuildingDefinition] = field(default_factory=dict)
     buildings: list[Building] = field(default_factory=list)
     under_construction: list[BuildingConstruction] = field(default_factory=list)
-    paused_construction: dict[str, BuildingConstruction] = field(default_factory=dict)  # building_id -> construction progress
+    paused_construction: dict[str, BuildingConstruction] = field(
+        default_factory=dict
+    )  # building_id -> construction progress
     construction_queue: list[str] = field(default_factory=list)
 
     def add_building_definition(self, building_def: BuildingDefinition) -> None:
@@ -143,8 +149,8 @@ class BuildingManager:
         self,
         building_id: str,
         researched_techs: set[str],
-        city_terrain: Optional["TerrainType"] = None,
-        city_available_resources: Optional[set[str]] = None
+        city_terrain: Optional[str] = None,
+        city_available_resources: Optional[set[str]] = None,
     ) -> bool:
         building_def = self.get_building_definition(building_id)
         if building_def is None:

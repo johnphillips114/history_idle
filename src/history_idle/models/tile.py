@@ -5,6 +5,7 @@ from enum import Enum
 
 class CultureLevel(Enum):
     """Culture levels and their thresholds"""
+
     NONE = 0
     POOR = 200
     FLEDGLING = 1300
@@ -41,8 +42,9 @@ class CultureLevel(Enum):
 @dataclass
 class Tile:
     """Represents a tile in a city's territory"""
-    terrain: "TerrainType"  # The terrain type of this tile
-    resource: Optional["ResourceType"] = None  # Optional resource on this tile
+
+    terrain: str  # The terrain type of this tile
+    resource: Optional[str] = None  # Optional resource on this tile
 
     def __hash__(self):
         return hash((self.terrain.id, self.resource.id if self.resource else None))
